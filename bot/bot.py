@@ -1,12 +1,15 @@
 from sc2.bot_ai import BotAI, Race
 from sc2.data import Result
-
+from sc2.dicts import unit_abilities
+from sc2.ids.ability_id import AbilityId
+from sc2.ids.unit_typeid import UnitTypeId
+from typing import Dict, Set
 
 class CompetitiveBot(BotAI):
     NAME: str = "CompetitiveBot"
     """This bot's name"""
 
-    RACE: Race = Race.Terran
+    RACE: Race = Race.Protoss
     """This bot's Starcraft 2 race.
     Options are:
         Race.Terran
@@ -20,8 +23,9 @@ class CompetitiveBot(BotAI):
         This code runs once at the start of the game
         Do things here before the game starts
         """
+        
         print("Game started")
-
+        
     async def on_step(self, iteration: int):
         """
         This code runs continually throughout the game

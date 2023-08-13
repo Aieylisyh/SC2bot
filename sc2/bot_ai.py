@@ -284,6 +284,9 @@ class BotAI(BotAIInternal):
         if not self.mineral_field or not self.workers or not self.townhalls.ready:
             return
         worker_pool = self.workers.idle
+        # add more not idle ming work
+        #worker_pool.append(self.workers.filter(
+        #            lambda unit:  (unit.is_using_ability(AbilityId.HARVEST_RETURN) )))
         bases = self.townhalls.ready
         gas_buildings = self.gas_buildings.ready
 
@@ -292,6 +295,7 @@ class BotAI(BotAIInternal):
 
         for mining_place in bases | gas_buildings:
             difference = mining_place.surplus_harvesters
+            
             # perfect amount of workers, skip mining place
             if not difference:
                 continue
@@ -326,6 +330,9 @@ class BotAI(BotAIInternal):
 
         # prepare all minerals near a base if we have too many workers
         # and need to send them to the closest patch
+        
+        #print("worker_pool "+str(len(worker_pool)))
+        #print("deficit_mining_places "+str(len(deficit_mining_places)))
         if len(worker_pool) > len(deficit_mining_places):
             all_minerals_near_base = [
                 mineral for mineral in self.mineral_field
@@ -336,7 +343,7 @@ class BotAI(BotAIInternal):
             # as long as have workers and mining places
             if deficit_mining_places:
                 # choose only mineral fields first if current mineral to gas ratio is less than target ratio
-                if self.vespene and self.minerals / self.vespene < resource_ratio:
+                if self.vespene and self.minerals / self.vespene < resource_ratio and self.vespene > 100:
                     possible_mining_places = [place for place in deficit_mining_places if not place.vespene_contents]
                 # else prefer gas
                 else:
@@ -351,6 +358,7 @@ class BotAI(BotAIInternal):
                 # if current place is a gas extraction site, go there
                 if current_place.vespene_contents:
                     worker.gather(current_place)
+                    worker.return_resource(None,False)
                 # if current place is a gas extraction site,
                 # go to the mineral field that is near and has the most minerals left
                 else:

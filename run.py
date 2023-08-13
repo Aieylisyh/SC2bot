@@ -1,5 +1,7 @@
 
 from bot import CompetitiveBot
+from bot import protoss_carrier
+from bot import StalkerRush
 
 import argparse
 import asyncio
@@ -102,11 +104,12 @@ def parse_arguments():
 
 def load_bot(args):
     # Load bot
-    competitive_bot = CompetitiveBot()
+    #CompetitiveBot
+    myBot = StalkerRush.StalkerRushBot()
     # Add opponent_id to the bot class (accessed through self.opponent_id)
-    competitive_bot.opponent_id = args.OpponentId
+    myBot.opponent_id = args.OpponentId
 
-    return Bot(CompetitiveBot.RACE, competitive_bot)
+    return Bot(myBot.RACE, myBot)
 
 
 def run():
@@ -123,10 +126,15 @@ def run():
     else:
         # Local game
         print("Starting local game...")
-        run_game(sc2.maps.get(args.Map),
-                     [bot, Computer(Race[args.ComputerRace], Difficulty[args.ComputerDifficulty])],
-                     realtime=args.Realtime,
-                     sc2_version=args.Sc2Version, )
+        run_game(
+            sc2.maps.get("Simple96"),
+            #sc2.maps.get(args.Map),
+            [bot, Computer(Race[args.ComputerRace],
+            #Difficulty[args.ComputerDifficulty])],
+            Difficulty.CheatInsane)],
+            #realtime=args.Realtime,
+            realtime=True,
+            sc2_version=args.Sc2Version, )
 
 
 # Start game
