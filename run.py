@@ -131,7 +131,8 @@ def run():
             #sc2.maps.get(args.Map),
             [bot, Computer(Race[args.ComputerRace],
             #Difficulty[args.ComputerDifficulty])],
-            Difficulty.CheatInsane)],
+            #Difficulty.CheatInsane)],
+            Difficulty.VeryHard)],
             #realtime=args.Realtime,
             realtime=True,
             sc2_version=args.Sc2Version, )
