@@ -1,6 +1,5 @@
-
-from bot import CompetitiveBot
-from bot import protoss_carrier
+#from bot import CompetitiveBot
+#from bot import protoss_carrier
 from bot import StalkerRush
 
 import argparse
@@ -129,10 +128,11 @@ def run():
         run_game(
             sc2.maps.get("Simple96"),
             #sc2.maps.get(args.Map),
-            [bot, Computer(Race[args.ComputerRace],
+            #[bot, Computer(Race[args.ComputerRace],
+            [bot, Computer(Race["Random"],
             #Difficulty[args.ComputerDifficulty])],
-            #Difficulty.CheatInsane)],
-            Difficulty.VeryHard)],
+            Difficulty.CheatInsane)],
+            #VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane
             #realtime=args.Realtime,
             realtime=True,
             sc2_version=args.Sc2Version, )
