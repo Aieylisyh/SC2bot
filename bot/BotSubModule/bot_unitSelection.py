@@ -11,17 +11,16 @@ from sc2 import maps
 from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
 import asyncio
-from bot import StalkerRush
 
 class bot_unitSelection(BotAI):
-    bot:StalkerRush.StalkerRushBot
+    bot:BotAI
     def __init__(self, bot:BotAI):
         self.bot=bot
 
     def all_amy(self):
-        units= self.bot.units.filter(lambda p: not p.type_id==UnitTypeId.PROBE)
+        return self.bot.units.filter(lambda p: (not p.type_id==UnitTypeId.PROBE))
     def all_units(self):
-        units= self.bot.units
+        return self.bot.units
     def all_attack_units(self):
         return self.bot.units.of_type(
             {UnitTypeId.PROBE,

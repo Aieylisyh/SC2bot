@@ -12,9 +12,9 @@ from sc2 import maps
 from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
 import asyncio
-from bot import StalkerRush
+
 class bot_mainStrategy():
-    bot:StalkerRush.StalkerRushBot
+    bot:BotAI
     def __init__(self, bot:BotAI):
         self.bot=bot
         

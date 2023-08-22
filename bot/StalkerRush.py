@@ -8,11 +8,10 @@ from sc2.ids.unit_typeid import UnitTypeId
 from sc2.constants import *
 from sc2.ids.ability_id import AbilityId
 from sc2 import maps
-from sc2.bot_ai import BotAI
-from sc2.bot_ai import BotAI
-import bot_buildStructure
-import bot_economy
-import bot_mainStrategy
+
+from bot.BotSubModule.bot_buildStructure import bot_buildStructure
+from bot.BotSubModule.bot_economy import bot_economy
+from bot.BotSubModule.bot_mainStrategy import bot_mainStrategy
 from bot.BotSubModule.bot_tactics import bot_tactics
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
 from bot.BotSubModule.bot_proxyUnits import bot_proxyUnits
@@ -44,11 +43,15 @@ class StalkerRushBot(BotAI):
         if unit.can_attack:
           unit.attack(t)
 
-  def DoIter10(self):
+  async def DoIter10(self):
     self.iter10+=1
     
-  def DoIter3(self):
+  async def DoIter3(self):
     self.iter3+=1
+    await self.economy.BuildAssimilators()
+    await self.economy.DistributeWorkers()
+    #print("DoIter3")
+
 
   def LaunchAttack(self):
     if self.already_pending_upgrade(UpgradeId.BLINKTECH) <0.9:
@@ -77,6 +80,8 @@ class StalkerRushBot(BotAI):
       self.proxyUnits= bot_proxyUnits(self)
       self.nexusSkill= bot_nexusSkill(self)
 
+      await self.economy.DistributeWorkers(True)
+
 
   async def on_end(self, result):
       print("Game ended.")
@@ -86,22 +91,18 @@ class StalkerRushBot(BotAI):
     if not self.townhalls.ready:
       self.AttackWithAllForces()
       return
+    
     if(iteration%10==0):
-      self.DoIter10()
+      await self.DoIter10()
     if(iteration%3==0):
-      self.DoIter3()
-
+      await self.DoIter3()
+      
     if(iteration==0):
       await self.chat_send("(glhf)")
 
-    nexus = self.townhalls.ready.random
-   
-    # Distribute workers in gas and across bases
-    await self.distribute_workers(1.6)
     await self.tactics.micro()
     await self.tech.forge_research()
     await self.buildStructure.build_productions()
-    await self.economy.Buildassimilators()
     await self.economy.TrainWorkers()
 
     return

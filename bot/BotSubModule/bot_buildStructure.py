@@ -17,7 +17,7 @@ import asyncio
 from bot.BotSubModule.botEnums.LocationPref import LocationPref
 
 class bot_buildStructure(BotAI):
-    bot:StalkerRush.StalkerRushBot
+    bot:BotAI
 
     def __init__(self, bot:BotAI):
         self.bot=bot
@@ -127,5 +127,4 @@ class bot_buildStructure(BotAI):
                 and self.bot.structures(UnitTypeId.ROBOTICSFACILITY).amount  < 1
                 and self.bot.structures(UnitTypeId.NEXUS).amount > 1
             ):
-                await self.bot.build(UnitTypeId.ROBOTICSFACILITY, near=pylon)						
-import StalkerRush
+                await self.bot.build(UnitTypeId.ROBOTICSFACILITY, near=pylon)
