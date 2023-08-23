@@ -36,8 +36,8 @@ class bot_economy:
     def workerCapPerTownhall(self):
         return self.mineralFieldCount * 2 + self.vespineGasCount * 3
 
-    def GetSupplyCap(self, includingPending):
-        if includingPending:
+    def GetSupplyCap(self, includePending):
+        if includePending:
             return (
                 self.buildStructure.GetBuildingCount(UnitTypeId.NEXUS)
                 * self.supply_nexus
@@ -50,13 +50,15 @@ class bot_economy:
         if not self.bot.can_afford(UnitTypeId.PROBE):
             return
         # print("TrainWorkers1")
-        townhalls = self.bot.townhalls.ready.idle
+        townhalls = self.bot.townhalls
         targetWorker = min(
             townhalls.amount * self.workerCapPerTownhall, self.GetSupplyCap(True)
         )
         for townhall in townhalls:
             if (
-                self.bot.supply_workers + self.bot.already_pending(UnitTypeId.PROBE)
+                townhall.is_idle
+                and townhall.is_ready
+                and self.bot.supply_workers + self.bot.already_pending(UnitTypeId.PROBE)
                 < targetWorker
             ):
                 townhall.train(UnitTypeId.PROBE)
@@ -92,9 +94,9 @@ class bot_economy:
                 .closer_than(12, townhall)
                 .amount
             )
-            #print("assimilatorAmount should less than")
-            #print(assimilatorAmount)
-            #print(amount)
+            # print("assimilatorAmount should less than")
+            # print(assimilatorAmount)
+            # print(amount)
             if assimilatorAmount >= amount:
                 break
             for vg in vgs:
@@ -145,7 +147,7 @@ class bot_economy:
             if difference > 0:
                 # this base has more than idea workers
                 # needs to spare difference workers out
-                #print(difference)
+                print(difference)
             local_minerals_tags = {
                 mineral.tag
                 for mineral in bot.mineral_field

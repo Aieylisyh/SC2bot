@@ -92,13 +92,13 @@ class bot_buildStructure(BotAI):
             return
         hasDepend = True
         if dependProgress > 0 and not dependId == UnitTypeId.NOTAUNIT:
-            dependAmount = self.GetBuildingCount(dependId)
-            dependAmount += self.GetBuildingCount(subDependId1)
-            dependAmount += self.GetBuildingCount(subDependId2)
-            dependAmount += self.GetBuildingCount(subDependId3)
+            dependAmount = self.GetBuildingCount(dependId, True, True, False)
+            dependAmount += self.GetBuildingCount(subDependId1, True, True, False)
+            dependAmount += self.GetBuildingCount(subDependId2, True, True, False)
+            dependAmount += self.GetBuildingCount(subDependId3, True, True, False)
             hasDepend = dependAmount >= dependProgress
         if hasDepend:
-            await self.bot.build(id, near=near)
+            await self.bot.build(id, near=near, max_distance=maxDistance)
 
     def GetSupplyCap(self, includingPending):
         if includingPending:

@@ -30,6 +30,7 @@ class bot_trainArmy:
         if (
             bot.startingGame_stalkersBuilt < 2
             and bot.structures(UnitTypeId.GATEWAY).ready
+            and bot.structures(UnitTypeId.CYBERNETICSCORE).ready
         ):
             for bg in bot.structures(UnitTypeId.GATEWAY).ready:
                 if bg.is_idle and bot.can_afford(UnitTypeId.STALKER):
