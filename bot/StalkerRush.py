@@ -39,6 +39,7 @@ class StalkerRushBot(BotAI):
     nexusSkill: bot_nexusSkill
 
     startingGame_stalkersBuilt: int = 0
+    startingGame_stalkersRushed: bool = False
 
     async def DoIter10(self):
         self.iter10 += 1
@@ -47,6 +48,7 @@ class StalkerRushBot(BotAI):
         self.iter3 += 1
         await self.economy.BuildAssimilators()
         await self.economy.DistributeWorkers()
+        await self.mainStrategy.Rush()
 
     async def on_start(self):
         self.buildStructure = bot_buildStructure(self)
@@ -65,12 +67,12 @@ class StalkerRushBot(BotAI):
 
     async def on_step(self, iteration):
         if not self.townhalls.ready:
-            self.AttackWithAllForces()
+            self.mainStrategy.AttackWithAllForces(True)
             return
 
-        if iteration % 10 == 0:
+        if iteration % 10 == 9:
             await self.DoIter10()
-        if iteration % 3 == 0:
+        if iteration % 3 == 2:
             await self.DoIter3()
 
         if iteration == 0:
@@ -84,4 +86,6 @@ class StalkerRushBot(BotAI):
         await self.trainArmy.train()
         await self.economy.Expand()
         await self.nexusSkill.ChronoBoost()
+        await self.tactics.scout_ob()
+        await self.mainStrategy.fight()
         return

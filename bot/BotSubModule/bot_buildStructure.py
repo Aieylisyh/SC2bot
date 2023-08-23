@@ -18,7 +18,7 @@ import asyncio
 from bot.BotSubModule.botEnums.LocationPref import LocationPref
 
 
-class bot_buildStructure(BotAI):
+class bot_buildStructure:
     bot: BotAI
 
     def __init__(self, bot: BotAI):
@@ -126,11 +126,20 @@ class bot_buildStructure(BotAI):
         supplyUsed = bot.supply_used
         supplyExpected = self.GetSupplyCap(True)
         supplyLeft = supplyExpected - supplyUsed
+        supplyLeft_real = (
+            supplyLeft
+            - self.GetBuildingCount(UnitTypeId.NEXUS, False, True, True)
+            * self.supply_nexus
+        )
         thisPylonNum = 1 + self.GetBuildingCount(UnitTypeId.PYLON)
         if (
-            thisPylonNum == 1
+            (
+                supplyLeft_real < 3
+                and self.GetBuildingCount(UnitTypeId.PYLON, False, True, True) == 0
+            )
+            or thisPylonNum == 1
             or supplyUsed > 185
-            and supplyLeft < 6
+            and supplyLeft < 7
             or supplyUsed > 100
             and supplyLeft < 10
             or supplyUsed > 64
@@ -139,8 +148,6 @@ class bot_buildStructure(BotAI):
             and supplyLeft < 6
             or supplyUsed > 18
             and supplyLeft < 4
-            or thisPylonNum < 2
-            and supplyLeft < 5
         ):
             if thisPylonNum == 1:
                 await self.buildOne(
@@ -243,26 +250,27 @@ class bot_buildStructure(BotAI):
                 self.target_BG_Count,
                 bot.structures(UnitTypeId.PYLON).ready.random,
                 15,
-                UnitTypeId.FORGE,
-                1,
+                dependId=UnitTypeId.FORGE,
+                dependProgress=1,
                 subId1=UnitTypeId.WARPGATE,
             )
-        elif bot.supply_used > 55:
+        elif bot.supply_used > 61:
+            # VR
+            await self.buildOne(
+                UnitTypeId.ROBOTICSFACILITY,
+                1,
+                self.base1MainPylon,
+                20,
+                dependId=UnitTypeId.NEXUS,
+                dependProgress=2,
+            )
+        elif bot.supply_used > 54:
             await self.buildOne(
                 UnitTypeId.GATEWAY,
-                4,
+                3,
                 bot.structures(UnitTypeId.PYLON).ready.random,
                 15,
-                UnitTypeId.FORGE,
-                1,
+                dependId=UnitTypeId.FORGE,
+                dependProgress=1,
                 subId1=UnitTypeId.WARPGATE,
             )
-        # VR
-        await self.buildOne(
-            UnitTypeId.ROBOTICSFACILITY,
-            1,
-            self.base1MainPylon,
-            20,
-            UnitTypeId.NEXUS,
-            2,
-        )

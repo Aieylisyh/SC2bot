@@ -26,7 +26,7 @@ class bot_trainArmy:
 
     async def train(self):
         bot = self.bot
-
+        townhallAmount = bot.townhalls.amount
         if (
             bot.startingGame_stalkersBuilt < 2
             and bot.structures(UnitTypeId.GATEWAY).ready
@@ -53,41 +53,51 @@ class bot_trainArmy:
         if bot.structures(UnitTypeId.ROBOTICSFACILITY):
             mgRatio = self.mgRatio()
             for vr in bot.structures(UnitTypeId.ROBOTICSFACILITY).ready.idle:
-                if bot.can_afford(UnitTypeId.IMMORTAL) and (
-                    mgRatio >= 2 or bot.minerals > 325
+                if (
+                    bot.can_afford(UnitTypeId.IMMORTAL)
+                    and (mgRatio >= 1.8 or bot.minerals > 300)
+                    and bot.units(UnitTypeId.IMMORTAL).amount < townhallAmount + 1
+                    and bot.units(UnitTypeId.OBSERVER).amount
+                    + bot.units(UnitTypeId.OBSERVERSIEGEMODE).amount
+                    > 1
                 ):
                     vr.train(UnitTypeId.IMMORTAL)
                 elif bot.can_afford(UnitTypeId.OBSERVER) and (
-                    mgRatio < 0.35 or bot.vespene > 350
+                    mgRatio < 0.4 or bot.vespene > 300
                 ):
                     if (
                         bot.units(UnitTypeId.OBSERVER).amount
                         + bot.units(UnitTypeId.OBSERVERSIEGEMODE).amount
-                    ) < 1:
+                    ) < townhallAmount * 1.5 - 0.5:
                         vr.train(UnitTypeId.OBSERVER)
 
-    async def warp_bg_units(self, proxy):
+    async def warp_bg_units(self, proxy: Unit):
+        bot = self.bot
         mgRatio = self.mgRatio()
         uid = UnitTypeId.STALKER
-        if mgRatio > 2.5 and self.bot.vespene < 200:
+        townhallAmount = bot.townhalls.amount
+        if (
+            mgRatio > 2.5
+            and bot.units(UnitTypeId.ZEALOT).amount < 5 * townhallAmount - 1
+        ):
             uid = UnitTypeId.ZEALOT
         if (
             mgRatio < 0.4
-            and self.bot.vespene > 200
-            and self.bot.units(UnitTypeId.SENTRY).amount < 3
+            and bot.vespene > 200
+            and bot.units(UnitTypeId.SENTRY).amount < townhallAmount + 1
         ):
             uid = UnitTypeId.SENTRY
-        if self.bot.can_afford(uid):
-            for warpgate in self.bot.structures(UnitTypeId.WARPGATE).ready:
-                abilities = await self.bot.get_available_abilities(warpgate)
+        if bot.can_afford(uid):
+            for warpgate in bot.structures(UnitTypeId.WARPGATE).ready:
+                abilities = await bot.get_available_abilities(warpgate)
                 # all the units have the same cooldown anyway so let's just look at STALKER
                 if AbilityId.WARPGATETRAIN_STALKER in abilities:
                     pos = proxy.position.to2.random_on_distance(5)
-                    placement = await self.bot.find_placement(
+                    placement = await bot.find_placement(
                         AbilityId.WARPGATETRAIN_STALKER, pos, 7, placement_step=1
                     )
                     if placement is None:
                         # return ActionResult.CantFindPlacementLocation
-                        print("can't place")
+                        # print("can't place")
                         return
                     warpgate.warp_in(uid, placement)
