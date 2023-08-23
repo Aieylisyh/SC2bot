@@ -297,6 +297,7 @@ class bot_economy:
                     )
                     if target_mineral:
                         worker.gather(target_mineral)
+                        worker.return_resource(None, False)
             # more workers to distribute than free mining spots
             # send to closest if worker is doing nothing
             elif worker.is_idle and all_minerals_near_base:
