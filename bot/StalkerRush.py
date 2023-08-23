@@ -106,4 +106,5 @@ class StalkerRushBot(BotAI):
         await self.buildStructure.BuildPylons()
         await self.trainArmy.train()
         await self.economy.Expand()
+        await self.nexusSkill.ChronoBoost()
         return

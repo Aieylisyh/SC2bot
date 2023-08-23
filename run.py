@@ -1,4 +1,3 @@
-
 from bot import CompetitiveBot
 from bot import protoss_carrier
 from bot import StalkerRush
@@ -36,7 +35,13 @@ def run_ladder_game(args, bot):
     portconfig.players = [[ports[3], ports[4]]]
 
     # Join ladder game
-    g = join_ladder_game(host=host, port=host_port, players=[bot], realtime=args.Realtime, portconfig=portconfig)
+    g = join_ladder_game(
+        host=host,
+        port=host_port,
+        players=[bot],
+        realtime=args.Realtime,
+        portconfig=portconfig,
+    )
 
     # Run it
     result = asyncio.get_event_loop().run_until_complete(g)
@@ -45,13 +50,22 @@ def run_ladder_game(args, bot):
 
 # Modified version of sc2.main._join_game to allow custom host and port, and to not spawn an additional sc2process (thanks to alkurbatov for fix)
 async def join_ladder_game(
-        host, port, players, realtime, portconfig, save_replay_as=None, step_time_limit=None, game_time_limit=None
+    host,
+    port,
+    players,
+    realtime,
+    portconfig,
+    save_replay_as=None,
+    step_time_limit=None,
+    game_time_limit=None,
 ):
     ws_url = "ws://{}:{}/sc2api".format(host, port)
     ws_connection = await aiohttp.ClientSession().ws_connect(ws_url, timeout=120)
     client = Client(ws_connection)
     try:
-        result = await sc2.main._play_game(players[0], client, realtime, portconfig, step_time_limit, game_time_limit)
+        result = await sc2.main._play_game(
+            players[0], client, realtime, portconfig, step_time_limit, game_time_limit
+        )
         if save_replay_as is not None:
             await client.save_replay(save_replay_as)
         # await client.leave()
@@ -75,17 +89,37 @@ def parse_arguments():
     parser.add_argument("--LadderServer", type=str, help="Ladder server.")
 
     # Local play arguments
-    parser.add_argument("--Sc2Version", type=str, help="The version of Starcraft 2 to load.")
-    parser.add_argument("--ComputerRace", type=str, default="Terran",
-                        help="Computer race. One of [Terran, Zerg, Protoss, Random]. Default is Terran. Only for local play.")
-    parser.add_argument("--ComputerDifficulty", type=str, default="VeryHard",
-                        help=f"Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]. Default is VeryEasy. Only for local play.")
-    parser.add_argument("--Map", type=str, default="Simple64",
-                        help="The name of the map to use. Default is Simple64. Only for local play.")
+    parser.add_argument(
+        "--Sc2Version", type=str, help="The version of Starcraft 2 to load."
+    )
+    parser.add_argument(
+        "--ComputerRace",
+        type=str,
+        default="Terran",
+        help="Computer race. One of [Terran, Zerg, Protoss, Random]. Default is Terran. Only for local play.",
+    )
+    parser.add_argument(
+        "--ComputerDifficulty",
+        type=str,
+        default="VeryHard",
+        help=f"Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]. Default is VeryEasy. Only for local play.",
+    )
+    parser.add_argument(
+        "--Map",
+        type=str,
+        default="Simple64",
+        help="The name of the map to use. Default is Simple64. Only for local play.",
+    )
 
     # Both Ladder and Local play arguments
-    parser.add_argument("--OpponentId", type=str, help="A unique value identifying opponent.")
-    parser.add_argument("--Realtime", action='store_true', help="Whether to use realtime mode. Default is false.")
+    parser.add_argument(
+        "--OpponentId", type=str, help="A unique value identifying opponent."
+    )
+    parser.add_argument(
+        "--Realtime",
+        action="store_true",
+        help="Whether to use realtime mode. Default is false.",
+    )
 
     args, unknown_args = parser.parse_known_args()
 
@@ -104,7 +138,7 @@ def parse_arguments():
 
 def load_bot(args):
     # Load bot
-    #CompetitiveBot
+    # CompetitiveBot
     myBot = StalkerRush.StalkerRushBot()
     # Add opponent_id to the bot class (accessed through self.opponent_id)
     myBot.opponent_id = args.OpponentId
@@ -128,14 +162,20 @@ def run():
         print("Starting local game...")
         run_game(
             sc2.maps.get("Simple96"),
-            #sc2.maps.get(args.Map),
-            [bot, Computer(Race[args.ComputerRace],
-            #Difficulty[args.ComputerDifficulty])],
-            #"Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]
-            Difficulty.MediumHard)],
-            #realtime=args.Realtime,
-            realtime=False,
-            sc2_version=args.Sc2Version, )
+            # sc2.maps.get(args.Map),
+            [
+                bot,
+                Computer(
+                    Race[args.ComputerRace],
+                    # Difficulty[args.ComputerDifficulty])],
+                    # "Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]
+                    Difficulty.MediumHard,
+                ),
+            ],
+            # realtime=args.Realtime,
+            realtime=True,
+            sc2_version=args.Sc2Version,
+        )
 
 
 # Start game

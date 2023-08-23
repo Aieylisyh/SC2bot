@@ -73,10 +73,10 @@ class bot_economy:
         # print("BuildAssimilators")
         # print(probeCount)
         # print(n)
-        if probeCount >= n - 1:
+        if probeCount >= n - 1 and self.bot.structures(UnitTypeId.GATEWAY).amount > 0.5:
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 1)
-        if probeCount >= n + 2:
+        if probeCount >= n + 2 and self.bot.structures(UnitTypeId.NEXUS).amount > 1:
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 2)
 
@@ -242,8 +242,8 @@ class bot_economy:
         # distribute every worker in the pool
         for worker in worker_pool:
             # as long as have workers and mining places
-            print("worker")
-            print(worker)
+            # print("worker")
+            # print(worker)
             if deficit_mining_places:
                 # choose only mineral fields first if current mineral to gas ratio is less than target ratio
                 if (
@@ -311,7 +311,8 @@ class bot_economy:
         if (
             self.buildStructure.GetBuildingCount(UnitTypeId.NEXUS)
             < self.target_Base_Count
-            and bot.supply_workers >= bot.townhalls.amount * 20 - 2
+            and bot.supply_workers
+            >= bot.townhalls.amount * self.workerCapPerTownhall - 5
         ):
             if bot.can_afford(UnitTypeId.NEXUS):
                 await bot.expand_now()
