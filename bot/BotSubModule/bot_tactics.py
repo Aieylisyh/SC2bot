@@ -34,7 +34,7 @@ class bot_tactics(BotAI):
                     stalker(AbilityId.EFFECT_BLINK_STALKER, escape_location)
                     continue
                 else: 
-                    retreatPoints: Set[Point2] = self.bot.around8(stalker.position, distance=2) | self.bot.around8(stalker.position, distance=4)
+                    retreatPoints: Set[Point2] = self.around8(stalker.position, distance=2) | self.around8(stalker.position, distance=4)
                     # Filter points that are pathable
                     retreatPoints: Set[Point2] = {x for x in retreatPoints if self.bot.in_pathing_grid(x)}
                     if retreatPoints:
