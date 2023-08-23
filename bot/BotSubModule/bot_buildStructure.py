@@ -147,7 +147,14 @@ class bot_buildStructure(BotAI):
                     UnitTypeId.PYLON, thisPylonNum, self.Ramp1PylonPos, 2
                 )
             elif thisPylonNum == 2:
-                await self.buildOne(UnitTypeId.PYLON, thisPylonNum, self.Pylon2Pos, 3)
+                await self.buildOne(
+                    UnitTypeId.PYLON,
+                    thisPylonNum,
+                    self.Pylon2Pos,
+                    3,
+                    UnitTypeId.CYBERNETICSCORE,
+                    0.3,
+                )
             else:
                 if thisPylonNum % 2 == 0:
                     await self.buildOne(

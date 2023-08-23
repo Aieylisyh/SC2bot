@@ -169,7 +169,7 @@ def run():
                     Race[args.ComputerRace],
                     # Difficulty[args.ComputerDifficulty])],
                     # "Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]
-                    Difficulty.MediumHard,
+                    Difficulty.VeryHard,
                 ),
             ],
             # realtime=args.Realtime,

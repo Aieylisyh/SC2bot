@@ -38,12 +38,7 @@ class StalkerRushBot(BotAI):
     trainArmy: bot_trainArmy
     nexusSkill: bot_nexusSkill
 
-    def AttackWithAllForces(self):
-        all_attack_units = bot_unitSelection.all_units(self)
-        t = self.enemy_start_locations[0]
-        for unit in all_attack_units:
-            if unit.can_attack:
-                unit.attack(t)
+    startingGame_stalkersBuilt: int = 0
 
     async def DoIter10(self):
         self.iter10 += 1
@@ -52,34 +47,16 @@ class StalkerRushBot(BotAI):
         self.iter3 += 1
         await self.economy.BuildAssimilators()
         await self.economy.DistributeWorkers()
-        # print("DoIter3")
-
-    def LaunchAttack(self):
-        if self.already_pending_upgrade(UpgradeId.BLINKTECH) < 0.9:
-            return
-
-        myForces = self.GetAllCombatForces()
-        if myForces.amount > self.attackForce_count:
-            # targets = (self.enemy_units | self.enemy_structures).filter(lambda unit: unit.can_be_attacked)
-            target = self.enemy_start_locations[0].position
-            for f in myForces.idle:
-                if f.can_attack:
-                    f.attack(target)
-                else:
-                    f.move(target)
-        return
 
     async def on_start(self):
-        print("StalkerRushBot Game started")
         self.buildStructure = bot_buildStructure(self)
         self.economy = bot_economy(self)
-        self.mainStrategy = bot_mainStrategy(self)
+        self.unitSelection = bot_unitSelection(self)
         self.tactics = bot_tactics(self)
         self.tech = bot_tech(self)
-        self.unitSelection = bot_unitSelection(self)
         self.trainArmy = bot_trainArmy(self)
         self.nexusSkill = bot_nexusSkill(self)
-
+        self.mainStrategy = bot_mainStrategy(self)
         await self.economy.StartGameAllocateWorkers()
 
     async def on_end(self, result):

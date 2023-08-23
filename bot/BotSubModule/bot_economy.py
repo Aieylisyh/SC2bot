@@ -73,10 +73,10 @@ class bot_economy:
         # print("BuildAssimilators")
         # print(probeCount)
         # print(n)
-        if probeCount >= n - 1 and self.bot.structures(UnitTypeId.GATEWAY).amount > 0.5:
+        if probeCount >= n + 1 and self.bot.structures(UnitTypeId.GATEWAY).amount > 0.5:
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 1)
-        if probeCount >= n + 2 and self.bot.structures(UnitTypeId.NEXUS).amount > 1:
+        if probeCount >= n + 3 and self.bot.structures(UnitTypeId.NEXUS).amount > 1:
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 2)
 
@@ -88,10 +88,13 @@ class bot_economy:
         for townhall in townhalls:
             vgs = self.bot.vespene_geyser.closer_than(15, townhall)
             assimilatorAmount = (
-                self.bot.structures(UnitTypeId.PROBE)
-                .ready.closer_than(12, townhall)
+                self.bot.structures(UnitTypeId.ASSIMILATOR)
+                .closer_than(12, townhall)
                 .amount
             )
+            #print("assimilatorAmount should less than")
+            #print(assimilatorAmount)
+            #print(amount)
             if assimilatorAmount >= amount:
                 break
             for vg in vgs:
@@ -142,7 +145,7 @@ class bot_economy:
             if difference > 0:
                 # this base has more than idea workers
                 # needs to spare difference workers out
-                print(difference)
+                #print(difference)
             local_minerals_tags = {
                 mineral.tag
                 for mineral in bot.mineral_field
@@ -308,6 +311,9 @@ class bot_economy:
     async def Expand(self):
         # expand base
         bot = self.bot
+        if bot.startingGame_stalkersBuilt < 2:
+            return
+
         if (
             self.buildStructure.GetBuildingCount(UnitTypeId.NEXUS)
             < self.target_Base_Count
