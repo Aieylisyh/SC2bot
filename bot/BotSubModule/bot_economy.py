@@ -66,19 +66,24 @@ class bot_economy:
 
     # Build gas assimilators
     async def BuildAssimilators(self):
+        bot = self.bot
         # assimilatorCount = self.bot.buildStructure.GetBuildingCount(UnitTypeId.ASSIMILATOR)
-        townhalls = self.bot.townhalls.ready
-        probeCount = self.bot.units(UnitTypeId.PROBE).amount + self.bot.already_pending(
+        townhalls = bot.townhalls.ready
+        probeCount = bot.units(UnitTypeId.PROBE).amount + bot.already_pending(
             UnitTypeId.PROBE
         )
         n = townhalls.amount * self.mineralFieldCount * 2
         # print("BuildAssimilators")
         # print(probeCount)
         # print(n)
-        if probeCount >= n + 1 and self.bot.structures(UnitTypeId.GATEWAY).amount > 0.5:
+        if probeCount >= n + 1 and bot.structures(UnitTypeId.GATEWAY).amount > 0.5:
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 1)
-        if probeCount >= n + 3 and self.bot.structures(UnitTypeId.NEXUS).amount > 1:
+        if (
+            probeCount >= n + 3
+            and bot.structures(UnitTypeId.NEXUS).amount > 1
+            and bot.startingGame_stalkersRushed
+        ):
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 2)
 
@@ -119,17 +124,18 @@ class bot_economy:
             )
         )
         base = bot.townhalls.ready[0]
-
         # local_minerals_tags = {mineral.tag for mineral in bot.mineral_field if mineral.distance_to(base) <= 8}
         local_minerals = {
-            mineral for mineral in bot.mineral_field if mineral.distance_to(base) <= 8
+            mineral for mineral in bot.mineral_field if mineral.distance_to(base) <= 12
         }
         for m in local_minerals:
+            if len(workerPool) < 1:
+                break
             w = workerPool.closest_to(m)
             workerPool.remove(w)
             w.gather(m)
-        len = workerPool.amount
-        restMinerals = bot.mineral_field.closest_n_units(base, len)
+        length = workerPool.amount
+        restMinerals = bot.mineral_field.closest_n_units(base, length)
         for m in restMinerals:
             w = workerPool.closest_to(m)
             workerPool.remove(w)

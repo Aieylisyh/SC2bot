@@ -17,6 +17,10 @@ from sc2.protocol import ConnectionAlreadyClosed
 # Run ladder game
 # This lets python-sc2 connect to a ladder game.
 # Based on: https://github.com/Dentosal/python-sc2/blob/master/examples/run_external.py
+
+# map pw iagreetotheeula
+
+
 def run_ladder_game(args, bot):
     if args.LadderServer == None:
         host = "127.0.0.1"
@@ -161,7 +165,8 @@ def run():
         # Local game
         print("Starting local game...")
         run_game(
-            sc2.maps.get("Simple96"),
+            sc2.maps.get("Simple96"),  # Simple64
+            # map password iagreetotheeula
             # sc2.maps.get(args.Map),
             [
                 bot,

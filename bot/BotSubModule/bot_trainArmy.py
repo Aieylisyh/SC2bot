@@ -77,8 +77,10 @@ class bot_trainArmy:
         uid = UnitTypeId.STALKER
         townhallAmount = bot.townhalls.amount
         if (
-            mgRatio > 2.5
-            and bot.units(UnitTypeId.ZEALOT).amount < 5 * townhallAmount - 1
+            mgRatio > 1.5
+            and bot.units(UnitTypeId.ZEALOT).amount < 4 * townhallAmount - 1
+        ) or (
+            mgRatio > 2.5 and bot.units(UnitTypeId.ZEALOT).amount < 5 * townhallAmount
         ):
             uid = UnitTypeId.ZEALOT
         if (
@@ -87,6 +89,9 @@ class bot_trainArmy:
             and bot.units(UnitTypeId.SENTRY).amount < townhallAmount + 1
         ):
             uid = UnitTypeId.SENTRY
+        if mgRatio > 1.2 and bot.units(UnitTypeId.ADEPT).amount < 2:
+            uid = UnitTypeId.ADEPT
+
         if bot.can_afford(uid):
             for warpgate in bot.structures(UnitTypeId.WARPGATE).ready:
                 abilities = await bot.get_available_abilities(warpgate)

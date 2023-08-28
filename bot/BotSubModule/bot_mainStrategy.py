@@ -14,18 +14,21 @@ from sc2.ids.buff_id import BuffId
 import asyncio
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
 from bot.BotSubModule.bot_tactics import bot_tactics
+from bot.BotSubModule.bot_buildStructure import bot_buildStructure
 
 
 class bot_mainStrategy:
     bot: BotAI
     unitSelection: bot_unitSelection
     tactics: bot_tactics
-    attackForce_supply: int = 40
+    attackForce_supply: int = 42
+    buildStructure: bot_buildStructure
 
     def __init__(self, bot: BotAI):
         self.bot = bot
         self.unitSelection = bot.unitSelection
         self.tactics = bot.tactics
+        self.buildStructure = bot.buildStructure
 
     async def Rush(self):
         bot = self.bot
@@ -64,147 +67,50 @@ class bot_mainStrategy:
                     f.attack(target)
         return
 
-    async def fight(self):
+    async def BattleMacro(self):
         bot = self.bot
-        enemies = self.tactics.GetEnemies()
-        enemy_fighters = self.tactics.GetEnemyAmy()
         if bot.supply_army > self.attackForce_supply:
             self.AttackWithAllForces(False)
-            for stalker in bot.units(UnitTypeId.STALKER).ready.idle:
-                if enemy_fighters:
-                    # select enemies in range
-                    in_range_enemies = enemy_fighters.in_attack_range_of(stalker)
-                    if in_range_enemies:
-                        # prioritize workers
-                        workers = in_range_enemies(
-                            {UnitTypeId.DRONE, UnitTypeId.SCV, UnitTypeId.PROBE}
-                        )
-                        if workers:
-                            in_range_enemies = workers
-                        # special micro for ranged units
-                        if stalker.ground_range > 1:
-                            # attack if weapon not on cooldown
-                            if stalker.weapon_cooldown == 0:
-                                # attack enemy with lowest hp of the ones in range
-                                lowest_hp = min(
-                                    in_range_enemies,
-                                    key=lambda e: (e.health + e.shield, e.tag),
-                                )
-                                stalker.attack(lowest_hp)
-                            else:
-                                # micro away from closest unit
-                                # move further away if too many enemies are near
-                                friends_in_range = bot.units(
-                                    UnitTypeId.STALKER
-                                ).in_attack_range_of(stalker)
-                                closest_enemy = in_range_enemies.closest_to(stalker)
-                                distance = (
-                                    stalker.ground_range
-                                    + stalker.radius
-                                    + closest_enemy.radius
-                                )
-                                if (
-                                    len(friends_in_range) <= len(in_range_enemies)
-                                    and closest_enemy.ground_range
-                                    <= stalker.ground_range
-                                ):
-                                    distance += 1
-                                else:
-                                    # if more than 5 units friends are close, use distance one shorter than range
-                                    # to let other friendly units get close enough as well and not block each other
-                                    if (
-                                        len(
-                                            bot.units(UnitTypeId.STALKER).closer_than(
-                                                7, stalker.position
-                                            )
-                                        )
-                                        >= 5
-                                    ):
-                                        distance -= -1
-                                stalker.move(
-                                    closest_enemy.position.towards(stalker, distance)
-                                )
-                        else:
-                            # target fire with melee units
-                            lowest_hp = min(
-                                in_range_enemies,
-                                key=lambda e: (e.health + e.shield, e.tag),
-                            )
-                            stalker.attack(lowest_hp)
-                    else:
-                        # no unit in range, go to closest
-                        stalker.move(enemy_fighters.closest_to(stalker))
-                # no dangerous enemy at all, attack closest anything
-                else:
-                    stalker.attack(bot.enemy_start_locations[0])
-        elif bot.units(UnitTypeId.STALKER).amount > 0:
-            for stalker in bot.units(UnitTypeId.STALKER).ready.idle:
-                if enemy_fighters:
-                    # select enemies in range
-                    in_range_enemies = enemy_fighters.in_attack_range_of(stalker)
-                    if in_range_enemies:
-                        # prioritize workers
-                        workers = in_range_enemies(
-                            {UnitTypeId.DRONE, UnitTypeId.SCV, UnitTypeId.PROBE}
-                        )
-                        if workers:
-                            in_range_enemies = workers
-                        # special micro for ranged units
-                        if stalker.ground_range > 1:
-                            # attack if weapon not on cooldown
-                            if stalker.weapon_cooldown == 0:
-                                # attack enemy with lowest hp of the ones in range
-                                lowest_hp = min(
-                                    in_range_enemies,
-                                    key=lambda e: (e.health + e.shield, e.tag),
-                                )
-                                stalker.attack(lowest_hp)
-                            else:
-                                # micro away from closest unit
-                                # move further away if too many enemies are near
-                                friends_in_range = bot.units(
-                                    UnitTypeId.STALKER
-                                ).in_attack_range_of(stalker)
-                                closest_enemy = in_range_enemies.closest_to(stalker)
-                                distance = (
-                                    stalker.ground_range
-                                    + stalker.radius
-                                    + closest_enemy.radius
-                                )
-                                if (
-                                    len(friends_in_range) <= len(in_range_enemies)
-                                    and closest_enemy.ground_range
-                                    <= stalker.ground_range
-                                ):
-                                    distance += 1
-                                else:
-                                    # if more than 5 units friends are close, use distance one shorter than range
-                                    # to let other friendly units get close enough as well and not block each other
-                                    if (
-                                        len(
-                                            bot.units(UnitTypeId.STALKER).closer_than(
-                                                7, stalker.position
-                                            )
-                                        )
-                                        >= 5
-                                    ):
-                                        distance -= -1
-                                stalker.move(
-                                    closest_enemy.position.towards(stalker, distance)
-                                )
-                        else:
-                            # target fire with melee units
-                            lowest_hp = min(
-                                in_range_enemies,
-                                key=lambda e: (e.health + e.shield, e.tag),
-                            )
-                            stalker.attack(lowest_hp)
-                    else:
-                        # no unit in range, go to closest
-                        stalker.move(enemy_fighters.closest_to(stalker))
-                # no dangerous enemy at all, attack closest anything
         else:
-            # our defense mechanic with our adepts
-            for adept in bot.units(UnitTypeId.ADEPT).ready.idle:
-                if enemy_fighters:
-                    adept.attack(random.choice(enemy_fighters))
+            enes = self.tactics.GetEnemyAmy()
+            if enes:
+                ts = bot.townhalls.ready
+                invaders: Units = None
+                for t in ts:
+                    invaders == enes.closer_than(15, t)
+                if invaders:
+                    all_attack_units = self.unitSelection.all_amy().idle
+                    for unit in all_attack_units:
+                        if unit.can_attack:
+                            unit.attack(invaders.closest_to(unit).position)
+                else:
+                    self.Rally()
+            else:
+                self.Rally()
+
+    def Rally(self):
+        bot = self.bot
+        if bot.structures.ready.amount < 3:
+            return
+
+        all_attack_units = self.unitSelection.all_amy().idle
+        # t = bot.townhalls.first.position
+        # if self.buildStructure.base2MainPylon:
+        #    t = self.buildStructure.base2MainPylon.position
+        # else:
+        #    dir = bot.start_location.offset(bot.enemy_start_locations[0])
+        #    t = bot.main_base_ramp.top_center + dir.normalized * 3
+        building2 = bot.structures.ready.closest_n_units(
+            bot.enemy_start_locations[0], 2
+        )
+
+        # dir = bot.start_location.negative_offset(bot.enemy_start_locations[0])
+        # rallyPos = t + dir.normalized * 4
+        rallyPos = 0.5 * (building2[0].position + building2[1].position)
+        # t1 = t - dir.normalized * 2
+        for unit in all_attack_units.idle:
+            if unit.can_attack:
+                unit.attack(rallyPos)
+            else:
+                unit.move(rallyPos)
+            # unit.patrol(t1, True)
