@@ -36,8 +36,8 @@ class bot_mainStrategy:
         return (
             self.attackForce_min_supply
             + bot.townhalls.ready.amount * 15
-            - bot.townhalls.not_ready.amount * 18
-            + bot.supply_left
+            - bot.townhalls.not_ready.amount * 20
+            + bot.supply_left * 0.6
         )
 
     async def Rush(self):

@@ -162,6 +162,9 @@ class bot_tactics:
                 stalker(AbilityId.EFFECT_BLINK_STALKER, escape_location)
                 return
             else:
+                if stalker.shield == 0:
+                    await self.Retreat(stalker, home_location)
+                    return
                 distanceRetreat = 2
                 retreatPoints: Set[Point2] = self.unitSelection.around8(
                     stalker.position, distance=distanceRetreat
@@ -176,7 +179,6 @@ class bot_tactics:
                     closestEnemy: Unit = enemyThreatsClose.closest_to(stalker)
                     retreatPoint: Unit = closestEnemy.position.furthest(retreatPoints)
                     stalker.move(retreatPoint)
-                    return
 
     async def MoveUnitsTogether(self, u: Unit, home_location: Point2):
         allies = self.unitSelection.GetUnits(False)
@@ -184,17 +186,10 @@ class bot_tactics:
         if not nearby:
             return
 
-        if nearby.amount > 2:
+        if nearby and nearby.amount > 2:
             p = nearby.center
             u.move(p)
             return
-
-        n: Unit = nearby.closest_to(u)
-        if (
-            n.distance_to_squared(home_location)
-            < u.distance_to_squared(home_location) + 1
-        ):
-            u.move(n.position)
 
     async def MicroMoveUnit(
         self, u: Unit, home_location: Point2, enemies_can_attack: Units
@@ -218,14 +213,20 @@ class bot_tactics:
 
         # print("nearestEne " + str(nearestEne))
         dir = u.position.offset(nearestEne.position).normalized
+        lowHpFactor = 0
+        if u.shield_health_percentage < 0.6:
+            lowHpFactor = 50
+        elif u.shield_health_percentage < 0.35:
+            lowHpFactor = 100
 
         allies = self.unitSelection.GetUnits(False)
         allies = self.unitSelection.FilterAttack(allies)
         allies = allies.ready.filter(lambda unit: not unit == u)
         allyForce = self.GetNearbyForceEstimate(u, allies) * isMeleeFactor
         eneForce = self.GetNearbyForceEstimate(u, enemies)
-        weAreStronger = allyForce > eneForce * 1.5
-        weAreWeaker = allyForce < eneForce * 1
+        weAreStronger = allyForce > eneForce * 1.5 + lowHpFactor
+
+        weAreWeaker = allyForce < eneForce * 1 + lowHpFactor
         if weAreStronger:
             u.move(u.position.towards(nearestEne.position))
             return
@@ -234,12 +235,12 @@ class bot_tactics:
             await self.StalkerEscape(u, home_location, enemies_can_attack)
 
         if weAreWeaker:
-            if random.random() > 0.4:
+            await self.Retreat(u, home_location)
+        else:
+            if random.random() > 0.5:
                 u.move(u.position - dir)
             else:
                 await self.MoveUnitsTogether(u, home_location)
-        else:
-            await self.MoveUnitsTogether(u, home_location)
 
     def GetNearbyForceEstimate(self, u: Unit, allies: Units):
         res = 0
@@ -266,30 +267,22 @@ class bot_tactics:
             return
         for e in attackableEnes:
             dmg = u.calculate_damage_vs_target(e)
-            dieUnits = []
             dmgValue = dmg[0]
             eneHp = e.health + e.shield
-            shots = eneHp / dmgValue
-            if shots <= 1:
-                dieUnits.append(e)
-            if len(dieUnits) > 0:
-                dieUnits = sorted(
-                    dieUnits,
-                    key=lambda du: dmgValue
-                    + unitSelection.DamageDealBonusToAjustAttackPriority(du),
-                    reverse=False,
-                )
-                u.attack(dieUnits[0])
-                return
+            shots = 10
+            if dmgValue > 0:
+                shots = eneHp / dmgValue
             bonusPriority = 0
-            if shots <= 2:
-                bonusPriority = 31
-            elif shots <= 3:
+            if shots == 1:
+                bonusPriority = 60
+            elif shots == 2:
+                bonusPriority = 35
+            elif shots == 3:
                 bonusPriority = 20
-            elif shots <= 4:
-                bonusPriority = 13
-            elif shots <= 5:
-                bonusPriority = 8
+            elif shots == 4:
+                bonusPriority = 12
+            elif shots == 5:
+                bonusPriority = 7
             eneToAttackSortedList = sorted(
                 attackableEnes,
                 key=lambda e: u.calculate_damage_vs_target(e)[0]
@@ -320,6 +313,9 @@ class bot_tactics:
                         rangedEneAmount += 1
                 if rangedEneAmount > 3:
                     u(AbilityId.GUARDIANSHIELD_GUARDIANSHIELD)
+
+    async def Retreat(self, u: Unit, home_location):
+        u.move(home_location)
 
     async def Micro(self):
         bot = self.bot

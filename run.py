@@ -179,7 +179,7 @@ def run():
                 ),
             ],
             # realtime=args.Realtime,
-            realtime=False,
+            realtime=True,
             sc2_version=args.Sc2Version,
         )
 

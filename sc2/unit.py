@@ -219,6 +219,7 @@ class Unit:
             UNIT_BATTLECRUISER,
             UNIT_ORACLE,
             UnitTypeId.VOIDRAY,
+            UnitTypeId.SENTRY,
             UnitTypeId.PHOENIX,
         }
 
@@ -230,7 +231,12 @@ class Unit:
     @cached_property
     def can_attack_ground(self) -> bool:
         """Checks if the unit can attack ground units."""
-        if self.type_id in {UNIT_BATTLECRUISER, UNIT_ORACLE, UnitTypeId.VOIDRAY}:
+        if self.type_id in {
+            UNIT_BATTLECRUISER,
+            UNIT_ORACLE,
+            UnitTypeId.VOIDRAY,
+            UnitTypeId.SENTRY,
+        }:
             return True
         if self._weapons:
             return any(weapon.type in TARGET_GROUND for weapon in self._weapons)
@@ -256,6 +262,8 @@ class Unit:
         if self.type_id == UNIT_BATTLECRUISER:
             return 6
         if self.type_id == UnitTypeId.VOIDRAY:
+            return 6.0
+        if self.type_id == UnitTypeId.SENTRY:
             return 6
         if self.can_attack_ground:
             weapon = next(
@@ -272,6 +280,8 @@ class Unit:
         if self.type_id == UNIT_BATTLECRUISER:
             return True
         if self.type_id == UnitTypeId.VOIDRAY:
+            return True
+        if self.type_id == UnitTypeId.SENTRY:
             return True
         if self._weapons:
             return any(weapon.type in TARGET_AIR for weapon in self._weapons)
@@ -294,6 +304,8 @@ class Unit:
         if self.type_id == UNIT_BATTLECRUISER:
             return 6
         if self.type_id == UnitTypeId.VOIDRAY:
+            return 6
+        if self.type_id == UnitTypeId.SENTRY:
             return 6
         if self.can_attack_air:
             weapon = next(
