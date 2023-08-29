@@ -48,6 +48,7 @@ class StalkerRushBot(BotAI):
         self.iter3 += 1
         await self.economy.BuildAssimilators()
         await self.economy.DistributeWorkers()
+        await self.mainStrategy.Rally()
         await self.mainStrategy.Rush()
 
     async def on_start(self):
@@ -70,11 +71,6 @@ class StalkerRushBot(BotAI):
             self.mainStrategy.AttackWithAllForces(True)
             return
 
-        if iteration % 10 == 9:
-            await self.DoIter10()
-        if iteration % 3 == 2:
-            await self.DoIter3()
-
         if iteration == 0:
             await self.chat_send("(glhf)")
         # print("tick "+ str(iteration))
@@ -89,4 +85,8 @@ class StalkerRushBot(BotAI):
         await self.tactics.CancelAttackedBuildings()
         await self.mainStrategy.BattleMacro()
         await self.tactics.Micro()
-        return
+
+        if iteration % 10 == 9:
+            await self.DoIter10()
+        if iteration % 3 == 2:
+            await self.DoIter3()

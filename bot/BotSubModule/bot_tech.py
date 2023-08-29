@@ -26,6 +26,7 @@ class bot_tech:
             self.bot.structures(UnitTypeId.CYBERNETICSCORE).ready
             and self.bot.can_afford(AbilityId.RESEARCH_WARPGATE)
             and self.bot.already_pending_upgrade(UpgradeId.WARPGATERESEARCH) == 0
+            and self.bot.startingGame_stalkersBuilt >= 2
         ):
             ccore = self.bot.structures(UnitTypeId.CYBERNETICSCORE).ready.first
             ccore.research(UpgradeId.WARPGATERESEARCH)

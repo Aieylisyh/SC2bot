@@ -151,7 +151,10 @@ class bot_buildStructure:
         ):
             if thisPylonNum == 1:
                 await self.buildOne(
-                    UnitTypeId.PYLON, thisPylonNum, self.Ramp1PylonPos, 2
+                    UnitTypeId.PYLON,
+                    thisPylonNum,
+                    (self.Ramp1PylonPos * 9 + bot.start_location) * 0.1,
+                    2,
                 )
             elif thisPylonNum == 2:
                 await self.buildOne(

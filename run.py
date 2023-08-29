@@ -175,11 +175,11 @@ def run():
                     Race["Random"],
                     # Difficulty[args.ComputerDifficulty])],
                     # "Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]
-                    Difficulty.VeryHard,
+                    Difficulty.CheatVision,
                 ),
             ],
             # realtime=args.Realtime,
-            realtime=False,
+            realtime=True,
             sc2_version=args.Sc2Version,
         )
 

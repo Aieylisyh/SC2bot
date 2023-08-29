@@ -12,6 +12,7 @@ from sc2.ids.ability_id import AbilityId
 from sc2 import maps
 from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
+from bot.BotSubModule.bot_unitSelection import bot_unitSelection
 import asyncio
 
 
@@ -19,88 +20,15 @@ class bot_tactics:
     bot: BotAI
     scoutTargetIndex: int
     ordered_expansions: None
+    unitSelection: bot_unitSelection
 
     def __init__(self, bot: BotAI):
         self.bot = bot
         self.scouts_and_spots = {}
         self.scoutTargetIndex = 0
         self.ordered_expansions = None
-
-    def GetEnemies(self) -> Units:
-        bot = self.bot
-        return bot.enemy_units.filter(
-            lambda unit: unit.type_id not in {UnitTypeId.LARVA, UnitTypeId.EGG}
-        )
-
-    def GetAirEnemies(self) -> Units:
-        bot = self.bot
-        return bot.enemy_units.filter(
-            lambda unit: (unit.type_id not in {UnitTypeId.LARVA, UnitTypeId.EGG})
-            and unit.is_flying
-        )
-
-    def GetGroundEnemies(self) -> Units:
-        bot = self.bot
-        return bot.enemy_units.filter(
-            lambda unit: (unit.type_id not in {UnitTypeId.LARVA, UnitTypeId.EGG})
-            and not unit.is_flying
-        )
-
-    def GetEnemyDetectors(self) -> Units:
-        bot = self.bot
-        return bot.enemy_units.filter(lambda unit: unit.is_detector)
-
-    def GetEnemyAmy(self) -> Units:
-        bot = self.bot
-        enes = self.GetEnemies()
-        if enes.empty:
-            return None
-        return enes.filter(lambda u: u.can_attack) + bot.enemy_structures(
-            {
-                UnitTypeId.BUNKER,
-                UnitTypeId.MISSILETURRET,
-                UnitTypeId.SPINECRAWLER,
-                UnitTypeId.SPORECANNON,
-                UnitTypeId.PHOTONCANNON,
-            }
-        )
-
-    def UnitsInRangeOfUnit(self, u: Unit, us: Units, range: float) -> Units:
-        return us.filter(
-            lambda v: self.bot._distance_squared_unit_to_unit(u, v) < range * range
-        )
-
-    def GetInRangeEnemies(self, u: Unit, range: Union[Unit, float], enes: Units):
-        if not enes:
-            enes = self.GetEnemies()
-        if enes.empty:
-            return None
-        if isinstance(range, Unit):
-            return self.UnitsInRangeOfUnit(u, enes, range.sight_range)
-        return self.UnitsInRangeOfUnit(u, enes, range)
-
-    def GetInRangeAllyObs(
-        self,
-        u: Unit,
-        range: Union[Unit, float],
-        id: UnitTypeId = UnitTypeId.OBSERVERSIEGEMODE,
-    ) -> Units:
-        others = self.bot.units(id).ready
-        if u in others:
-            others.remove(u)
-        if others.empty:
-            return None
-        if isinstance(range, Unit):
-            return self.UnitsInRangeOfUnit(u, others, range.sight_range)
-        return self.UnitsInRangeOfUnit(u, others, range)
-
-    def GetInRangeEnemyDetectors(self, u: Unit, range: Union[Unit, float]) -> Units:
-        enes = self.GetEnemyDetectors()
-        if enes.empty:
-            return None
-        if isinstance(range, Unit):
-            return self.UnitsInRangeOfUnit(u, enes, range.sight_range)
-        return self.UnitsInRangeOfUnit(u, enes, range)
+        self.unitSelection = bot.unitSelection
+        self
 
     # Cancel building on attack
     async def CancelAttackedBuildings(self):
@@ -111,7 +39,9 @@ class bot_tactics:
                 and s.build_progress > 0.15
                 and s.shield_health_percentage < 0.25
             ):
-                enes = self.GetInRangeEnemies(s, 8, self.GetEnemyAmy())
+                enes = self.unitSelection.GetInRangeUnits(
+                    s, 8, self.unitSelection.GetUnits(True)
+                )
                 if enes.amount > 1:
                     s(AbilityId.CANCEL, s)
 
@@ -130,7 +60,7 @@ class bot_tactics:
         # MORPH_OBSERVERMODE = 3739
         # MORPH_SURVEILLANCEMODE = 3741
         for obs in bot.units(UnitTypeId.OBSERVERSIEGEMODE).ready:
-            detectors = self.GetInRangeEnemyDetectors(obs, obs)
+            detectors = self.unitSelection.GetInRangeEnemyDetectors(obs, obs)
             if detectors and detectors.amount > 0:
                 obs(AbilityId.MORPH_OBSERVERMODE, queue=False)
                 # direction = obs.position.offset(bot.start_location)
@@ -140,7 +70,9 @@ class bot_tactics:
                 obs.move(obs.position + direction.normalized * 8, queue=True)
                 continue
 
-            otherObs = self.GetInRangeAllyObs(obs, obs.sight_range - 2)
+            otherObs = self.unitSelection.GetInRangeAllyObservers(
+                obs, obs.sight_range - 2
+            )
             if otherObs and otherObs.amount > 0:
                 obs(AbilityId.MORPH_OBSERVERMODE, queue=False)
                 direction = obs.position.negative_offset(
@@ -149,12 +81,14 @@ class bot_tactics:
                 obs.move(obs.position + direction.normalized * 6, queue=True)
                 continue
 
-            enes = self.GetInRangeEnemies(obs, obs, None)
+            enes = self.unitSelection.GetInRangeUnits(
+                obs, obs, self.unitSelection.GetUnits(True)
+            )
             if not enes or enes.amount < 3:
                 obs(AbilityId.MORPH_OBSERVERMODE, queue=False)
 
         for ob in bot.units(UnitTypeId.OBSERVER).ready:
-            detectors = self.GetInRangeEnemyDetectors(ob, ob)
+            detectors = self.unitSelection.GetInRangeEnemyDetectors(ob, ob)
             if detectors and detectors.amount > 0:
                 # direction = obs.position.offset(bot.start_location)
                 direction = ob.position.negative_offset(
@@ -162,11 +96,15 @@ class bot_tactics:
                 )
                 ob.move(ob.position + direction.normalized * 8)
                 continue
-            enes = self.GetInRangeEnemies(ob, ob, None)
-            otherObs = self.GetInRangeAllyObs(
+            enes = self.unitSelection.GetInRangeUnits(
+                ob, ob, self.unitSelection.GetUnits(True)
+            )
+            otherObs = self.unitSelection.GetInRangeAllyObservers(
                 ob, ob.sight_range, UnitTypeId.OBSERVERSIEGEMODE
             )
-            otherOb = self.GetInRangeAllyObs(ob, ob.sight_range, UnitTypeId.OBSERVER)
+            otherOb = self.unitSelection.GetInRangeAllyObservers(
+                ob, ob.sight_range, UnitTypeId.OBSERVER
+            )
             if enes and enes.amount > 4 and not otherObs and not otherOb:
                 ob(AbilityId.MORPH_SURVEILLANCEMODE, queue=False)
                 continue
@@ -225,9 +163,11 @@ class bot_tactics:
                 return
             else:
                 distanceRetreat = 2
-                retreatPoints: Set[Point2] = self.around8(
+                retreatPoints: Set[Point2] = self.unitSelection.around8(
                     stalker.position, distance=distanceRetreat
-                ) | self.around8(stalker.position, distance=distanceRetreat * 2)
+                ) | self.unitSelection.around8(
+                    stalker.position, distance=distanceRetreat * 2
+                )
                 # Filter points that are pathable
                 retreatPoints: Set[Point2] = {
                     x for x in retreatPoints if self.bot.in_pathing_grid(x)
@@ -238,63 +178,23 @@ class bot_tactics:
                     stalker.move(retreatPoint)
                     return
 
-    # Stolen and modified from position.py
-    def around8(self, position, distance=1) -> Set[Point2]:
-        p = position
-        d = distance
-        return self.around4(position, distance) | {
-            Point2((p.x - d, p.y - d)),
-            Point2((p.x - d, p.y + d)),
-            Point2((p.x + d, p.y - d)),
-            Point2((p.x + d, p.y + d)),
-        }
+    async def MoveUnitsTogether(self, u: Unit, home_location: Point2):
+        allies = self.unitSelection.GetUnits(False)
+        nearby = self.unitSelection.UnitsInRangeOfUnit(u, allies, 4.5)
+        if not nearby:
+            return
 
-    # Stolen and modified from position.py
-    def around4(self, position, distance=1) -> Set[Point2]:
-        p = position
-        d = distance
-        return {
-            Point2((p.x - d, p.y)),
-            Point2((p.x + d, p.y)),
-            Point2((p.x, p.y - d)),
-            Point2((p.x, p.y + d)),
-        }
+        if nearby.amount > 2:
+            p = nearby.center
+            u.move(p)
+            return
 
-    def GetAllIdleCombatForces(self):
-        units: Units = self.bot.units.of_type(
-            {
-                UnitTypeId.ZEALOT,
-                UnitTypeId.SENTRY,
-                UnitTypeId.OBSERVER,
-                UnitTypeId.STALKER,
-                UnitTypeId.IMMORTAL,
-                UnitTypeId.ADEPT,
-            }
-        )
-        return units.ready.idle
-
-    def GetAllCombatForces(self):
-        units: Units = self.bot.units.of_type(
-            {
-                UnitTypeId.ZEALOT,
-                UnitTypeId.SENTRY,
-                UnitTypeId.OBSERVER,
-                UnitTypeId.STALKER,
-                UnitTypeId.IMMORTAL,
-                UnitTypeId.ADEPT,
-            }
-        )
-        return units.ready
-
-    # for AttackPiority
-    def GetAttackUnitTypePreference(self, myId: UnitTypeId):
-        print("GetAttackUnitTypePreference")
-
-    # for AttackPiority
-    def GetAttackTargetPreference(self, u: Unit, rangeAdd: float):
-        print("GetAttackTargetPreference")
-        lowest_hp = min(in_range_enemies, key=lambda e: (e.health + e.shield, e.tag))
-        workers = attackableEnes({UnitTypeId.DRONE, UnitTypeId.SCV, UnitTypeId.PROBE})
+        n: Unit = nearby.closest_to(u)
+        if (
+            n.distance_to_squared(home_location)
+            < u.distance_to_squared(home_location) + 1
+        ):
+            u.move(n.position)
 
     async def MicroMoveUnit(
         self, u: Unit, home_location: Point2, enemies_can_attack: Units
@@ -302,53 +202,62 @@ class bot_tactics:
         # TODO chase weak target enemies or hide from enemies
         # only move, no attack
         bot = self.bot
-        enemies = self.GetEnemies()
+        enemies = self.unitSelection.GetUnits(True, workers=True)
         if not enemies:
             return
         nearestEne: Unit = enemies.closest_to(u)
-        dir = u.position.offset(nearestEne.position).normalized
-        allies = bot.units.ready.filter(
-            lambda unit: not unit == u
-            and unit.can_attack
-            and unit.type_id
-            not in {
-                UnitTypeId.EGG,
-                UnitTypeId.LARVA,
-                UnitTypeId.PROBE,
-                UnitTypeId.SCV,
-                UnitTypeId.DRONE,
-            }
-        )
-        alliesNearby = self.UnitsInRangeOfUnit(u, allies, 6)
-        alliesForceEstimate = 0
-        for a in alliesNearby:
-            c = bot.calculate_cost(a.type_id)
-            alliesForceEstimate += c.minerals + c.vespene
-        enesNearby = self.UnitsInRangeOfUnit(nearestEne, enemies, 6)
-        enesForceEstimate = 0
-        if enesNearby:
-            for a in enesNearby:
-                c = bot.calculate_cost(a.type_id)
-                enesForceEstimate += c.minerals + c.vespene
+        isMeleeFactor = 1
+        if u._weapons and u._weapons[0].range <= 2:
+            isMeleeFactor = 10
+        elif u._weapons and u._weapons[0].range <= 4:
+            isMeleeFactor = 2.5
 
-        # weAreStronger = alliesForceEstimate > enesForceEstimate * 1.5
-        # weAreWeaker = alliesForceEstimate * 1 < enesForceEstimate
-        weAreStronger = False
-        weAreWeaker = False
+        if isMeleeFactor >= 10:
+            u.move(u.position.towards(nearestEne.position))
+            return
+
+        # print("nearestEne " + str(nearestEne))
+        dir = u.position.offset(nearestEne.position).normalized
+
+        allies = self.unitSelection.GetUnits(False)
+        allies = self.unitSelection.FilterAttack(allies)
+        allies = allies.ready.filter(lambda unit: not unit == u)
+        allyForce = self.GetNearbyForceEstimate(u, allies) * isMeleeFactor
+        eneForce = self.GetNearbyForceEstimate(u, enemies)
+        weAreStronger = allyForce > eneForce * 1.5
+        weAreWeaker = allyForce < eneForce * 1
         if weAreStronger:
             u.move(u.position.towards(nearestEne.position))
-        elif weAreWeaker:
-            if u.type_id == UnitTypeId.STALKER:
-                await self.StalkerEscape(u, home_location, enemies_can_attack)
-            else:
+            return
+
+        if u.type_id == UnitTypeId.STALKER and (random.random() > 0.5 or weAreWeaker):
+            await self.StalkerEscape(u, home_location, enemies_can_attack)
+
+        if weAreWeaker:
+            if random.random() > 0.4:
                 u.move(u.position - dir)
+            else:
+                await self.MoveUnitsTogether(u, home_location)
         else:
-            if u.type_id == UnitTypeId.STALKER:
-                await self.StalkerEscape(u, home_location, enemies_can_attack)
+            await self.MoveUnitsTogether(u, home_location)
+
+    def GetNearbyForceEstimate(self, u: Unit, allies: Units):
+        res = 0
+        nearby0 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 4.5)
+        for a in nearby0:
+            res += self.unitSelection.GetUnitPowerValue(a)
+        nearby1 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 7)
+        for a in nearby1:
+            res += self.unitSelection.GetUnitPowerValue(a) * 0.5
+        nearby2 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 10)
+        for a in nearby2:
+            res += self.unitSelection.GetUnitPowerValue(a) * 0.25
+        return res
 
     async def TryAttackNearbyEnemy(self, u: Unit, rangeAdd: float):
         bot = self.bot
-        enemies = self.GetEnemies()
+        unitSelection = self.unitSelection
+        enemies = self.unitSelection.GetUnits(True, workers=True)
         attackableEnes = enemies.in_attack_range_of(u, rangeAdd)
         if not attackableEnes:
             return
@@ -357,19 +266,42 @@ class bot_tactics:
             return
         for e in attackableEnes:
             dmg = u.calculate_damage_vs_target(e)
-            if dmg[0] > e.health + e.shield:
-                u.attack(e)
+            dieUnits = []
+            dmgValue = dmg[0]
+            eneHp = e.health + e.shield
+            shots = eneHp / dmgValue
+            if shots <= 1:
+                dieUnits.append(e)
+            if len(dieUnits) > 0:
+                dieUnits = sorted(
+                    dieUnits,
+                    key=lambda du: dmgValue
+                    + unitSelection.DamageDealBonusToAjustAttackPriority(du),
+                    reverse=False,
+                )
+                u.attack(dieUnits[0])
                 return
-        eneToAttackSortedList = sorted(
-            attackableEnes,
-            key=lambda e: u.calculate_damage_vs_target(e)[0],
-            reverse=False,
-        )
-        u.attack(eneToAttackSortedList[0])
+            bonusPriority = 0
+            if shots <= 2:
+                bonusPriority = 25
+            elif shots <= 3:
+                bonusPriority = 18
+            elif shots <= 4:
+                bonusPriority = 14
+            elif shots <= 5:
+                bonusPriority = 9
+            eneToAttackSortedList = sorted(
+                attackableEnes,
+                key=lambda e: u.calculate_damage_vs_target(e)[0]
+                + self.unitSelection.DamageDealBonusToAjustAttackPriority(e)
+                + bonusPriority,
+                reverse=False,
+            )
+            u.attack(eneToAttackSortedList[0])
 
     async def Micro(self):
         bot = self.bot
-        enemies = self.GetEnemies()
+        enemies = self.unitSelection.GetUnits(True, workers=True)
         # enemies_air = self.GetAirEnemies()
         # enemies_ground = self.GetGroundEnemies()
 
