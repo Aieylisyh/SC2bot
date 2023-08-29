@@ -21,7 +21,7 @@ class bot_mainStrategy:
     bot: BotAI
     unitSelection: bot_unitSelection
     tactics: bot_tactics
-    attackForce_min_supply: int = -2
+    attackForce_min_supply: int = 0
     buildStructure: bot_buildStructure
 
     def __init__(self, bot: BotAI):
@@ -36,7 +36,7 @@ class bot_mainStrategy:
         return (
             self.attackForce_min_supply
             + bot.townhalls.ready.amount * 15
-            - bot.townhalls.not_ready.amount * 20
+            - bot.townhalls.not_ready.amount * 18
             + bot.supply_left
         )
 
@@ -55,7 +55,8 @@ class bot_mainStrategy:
 
     def AttackWithAllForces(self, includeWorkers: bool = True):
         bot = self.bot
-        forces = self.unitSelection.GetUnits(False, workers=includeWorkers)
+        forces = self.unitSelection.GetUnits(False, workers=includeWorkers, air=True)
+        # TODO Bug that void Ray has no weapon!
         forces = self.unitSelection.FilterAttack(forces)
         t = bot.enemy_start_locations[0]
         for unit in forces:

@@ -56,7 +56,7 @@ class bot_trainArmy:
                 if (
                     bot.can_afford(UnitTypeId.IMMORTAL)
                     and (mgRatio >= 1.8 or bot.minerals > 300)
-                    and bot.units(UnitTypeId.IMMORTAL).amount < townhallAmount + 1
+                    and bot.units(UnitTypeId.IMMORTAL).amount < townhallAmount * 0.7 + 2
                     and bot.units(UnitTypeId.OBSERVER).amount
                     + bot.units(UnitTypeId.OBSERVERSIEGEMODE).amount
                     > 1
@@ -70,6 +70,15 @@ class bot_trainArmy:
                         + bot.units(UnitTypeId.OBSERVERSIEGEMODE).amount
                     ) < townhallAmount * 1.5 - 0.5:
                         vr.train(UnitTypeId.OBSERVER)
+        # build Vs units
+        if bot.structures(UnitTypeId.STARGATE):
+            mgRatio = self.mgRatio()
+            for vs in bot.structures(UnitTypeId.STARGATE).ready.idle:
+                if (
+                    bot.can_afford(UnitTypeId.VOIDRAY)
+                    and bot.units(UnitTypeId.VOIDRAY).amount < townhallAmount * 1 + 2
+                ):
+                    vs.train(UnitTypeId.VOIDRAY)
 
     async def warp_bg_units(self, proxy: Unit):
         bot = self.bot

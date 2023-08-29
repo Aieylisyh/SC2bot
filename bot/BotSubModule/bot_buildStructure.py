@@ -24,7 +24,7 @@ class bot_buildStructure:
     def __init__(self, bot: BotAI):
         self.bot = bot
 
-    target_BG_Count: int = 7
+    target_BG_Count: int = 5
 
     supply_nexus = 15
     supply_pylon = 8
@@ -256,6 +256,16 @@ class bot_buildStructure:
                 dependId=UnitTypeId.FORGE,
                 dependProgress=1,
                 subId1=UnitTypeId.WARPGATE,
+            )
+        elif bot.supply_used > 72:
+            # VS
+            await self.buildOne(
+                UnitTypeId.STARGATE,
+                1,
+                bot.structures(UnitTypeId.PYLON).ready.random,
+                20,
+                dependId=UnitTypeId.ROBOTICSFACILITY,
+                dependProgress=1,
             )
         elif bot.supply_used > 61:
             # VR

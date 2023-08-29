@@ -129,6 +129,7 @@ class bot_unitSelection:
         misc: bool = False,
     ):
         bot = self.bot
+        # TODO Bug that void Ray has no weapon!
         units: Units
         if EneOrAlly:
             units = bot.enemy_units

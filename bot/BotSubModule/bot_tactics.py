@@ -283,13 +283,13 @@ class bot_tactics:
                 return
             bonusPriority = 0
             if shots <= 2:
-                bonusPriority = 25
+                bonusPriority = 31
             elif shots <= 3:
-                bonusPriority = 18
+                bonusPriority = 20
             elif shots <= 4:
-                bonusPriority = 14
+                bonusPriority = 13
             elif shots <= 5:
-                bonusPriority = 9
+                bonusPriority = 8
             eneToAttackSortedList = sorted(
                 attackableEnes,
                 key=lambda e: u.calculate_damage_vs_target(e)[0]
@@ -298,6 +298,28 @@ class bot_tactics:
                 reverse=False,
             )
             u.attack(eneToAttackSortedList[0])
+
+    async def SentryForceField(self, u: Unit, enes: Units):
+        if u.type_id == UnitTypeId.SENTRY:
+            abilities = await self.bot.get_available_abilities(u)
+            if AbilityId.GUARDIANSHIELD_GUARDIANSHIELD in abilities:
+                allies = self.unitSelection.GetUnits(False, True, False)
+                allies = self.unitSelection.UnitsInRangeOfUnit(u, allies, 5)
+                if allies.amount <= 3:
+                    return
+
+                enes = self.unitSelection.UnitsInRangeOfUnit(u, enes, 10)
+                enes = self.unitSelection.FilterAttack()
+                rangedEneAmount = 0
+                for e in enes:
+                    if (
+                        e.can_attack_ground
+                        and e._weapons[0]
+                        and e._weapons[0].range > 3
+                    ):
+                        rangedEneAmount += 1
+                if rangedEneAmount > 3:
+                    u(AbilityId.GUARDIANSHIELD_GUARDIANSHIELD)
 
     async def Micro(self):
         bot = self.bot
@@ -316,10 +338,11 @@ class bot_tactics:
             if u.weapon_cooldown < 0:
                 continue
 
-            if u.weapon_cooldown > 0:
+            if u.weapon_cooldown > 0.02:
                 await self.MicroMoveUnit(u, home_location, enemies)
                 continue
 
+            await self.SentryForceField(u, enemies)
             enes = enemies.in_attack_range_of(u)
             attackableEnes = enes
             # TODO refactor with
