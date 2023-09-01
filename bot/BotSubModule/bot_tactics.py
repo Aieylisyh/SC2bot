@@ -182,7 +182,7 @@ class bot_tactics:
 
     async def MoveUnitsTogether(self, u: Unit, home_location: Point2):
         allies = self.unitSelection.GetUnits(False)
-        nearby = self.unitSelection.UnitsInRangeOfUnit(u, allies, 4.5)
+        nearby = self.unitSelection.UnitsInRangeOfUnit(u, allies, 6.5)
         if not nearby:
             return
 
@@ -197,10 +197,14 @@ class bot_tactics:
         # TODO chase weak target enemies or hide from enemies
         # only move, no attack
         bot = self.bot
-        enemies = self.unitSelection.GetUnits(True, workers=True)
-        if not enemies:
+        enemiesUnits = self.unitSelection.GetUnits(True, workers=True)
+        enemies = enemiesUnits + bot.enemy_structures
+
+        if not enemiesUnits:
+            if enemies.amount > 0:
+                u.move(u.position.towards(enemies.center))
             return
-        nearestEne: Unit = enemies.closest_to(u)
+        nearestEne: Unit = enemiesUnits.closest_to(u)
         isMeleeFactor = 1
         if u._weapons and u._weapons[0].range <= 2:
             isMeleeFactor = 10
@@ -211,22 +215,22 @@ class bot_tactics:
             u.move(u.position.towards(nearestEne.position))
             return
 
-        # print("nearestEne " + str(nearestEne))
-        dir = u.position.offset(nearestEne.position).normalized
         lowHpFactor = 0
-        if u.shield_health_percentage < 0.6:
-            lowHpFactor = 50
-        elif u.shield_health_percentage < 0.35:
+        if u.shield_health_percentage < 0.5:
             lowHpFactor = 100
+        elif u.shield_health_percentage < 0.3:
+            lowHpFactor = 250
 
         allies = self.unitSelection.GetUnits(False)
         allies = self.unitSelection.FilterAttack(allies)
         allies = allies.ready.filter(lambda unit: not unit == u)
         allyForce = self.GetNearbyForceEstimate(u, allies) * isMeleeFactor
         eneForce = self.GetNearbyForceEstimate(u, enemies)
-        weAreStronger = allyForce > eneForce * 1.5 + lowHpFactor
-
+        weAreStronger = allyForce > eneForce * 1.6 + lowHpFactor
+        if u.is_flying:
+            weAreStronger = False
         weAreWeaker = allyForce < eneForce * 1 + lowHpFactor
+        # print(   "weAreStronger " + str(weAreStronger) + " weAreWeaker " + str(weAreWeaker) )
         if weAreStronger:
             u.move(u.position.towards(nearestEne.position))
             return
@@ -238,132 +242,127 @@ class bot_tactics:
             await self.Retreat(u, home_location)
         else:
             if random.random() > 0.5:
-                u.move(u.position - dir)
+                u.move(home_location)
             else:
                 await self.MoveUnitsTogether(u, home_location)
 
     def GetNearbyForceEstimate(self, u: Unit, allies: Units):
         res = 0
-        nearby0 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 4.5)
+        nearby0 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 5)
         for a in nearby0:
             res += self.unitSelection.GetUnitPowerValue(a)
-        nearby1 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 7)
+        nearby1 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 8)
         for a in nearby1:
             res += self.unitSelection.GetUnitPowerValue(a) * 0.5
-        nearby2 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 10)
+        nearby2 = self.unitSelection.UnitsInRangeOfUnit(u, allies, 14)
         for a in nearby2:
             res += self.unitSelection.GetUnitPowerValue(a) * 0.25
         return res
 
-    async def TryAttackNearbyEnemy(self, u: Unit, rangeAdd: float):
+    async def TryAttackEnemies(self, u: Unit, attackableEnes: Units):
         bot = self.bot
-        unitSelection = self.unitSelection
-        enemies = self.unitSelection.GetUnits(True, workers=True)
-        attackableEnes = enemies.in_attack_range_of(u, rangeAdd)
         if not attackableEnes:
             return
         if attackableEnes.amount == 1:
             u.attack(attackableEnes.first)  # closest_n_units
             return
+        #print("shots attackableEnes")
+        #print(attackableEnes)
         for e in attackableEnes:
             dmg = u.calculate_damage_vs_target(e)
             dmgValue = dmg[0]
             eneHp = e.health + e.shield
             shots = 10
+            #print(e)
             if dmgValue > 0:
-                shots = eneHp / dmgValue
+                shots = float(eneHp) / dmgValue
             bonusPriority = 0
-            if shots == 1:
+            if shots <= 1:
                 bonusPriority = 60
-            elif shots == 2:
-                bonusPriority = 35
-            elif shots == 3:
-                bonusPriority = 20
-            elif shots == 4:
-                bonusPriority = 12
-            elif shots == 5:
-                bonusPriority = 7
-            eneToAttackSortedList = sorted(
-                attackableEnes,
-                key=lambda e: u.calculate_damage_vs_target(e)[0]
-                + self.unitSelection.DamageDealBonusToAjustAttackPriority(e)
-                + bonusPriority,
-                reverse=False,
-            )
-            u.attack(eneToAttackSortedList[0])
+            elif shots <= 2:
+                bonusPriority = 32
+            elif shots <= 3:
+                bonusPriority = 16
+            elif shots <= 4:
+                bonusPriority = 8
 
-    async def SentryForceField(self, u: Unit, enes: Units):
+            v = (
+                u.calculate_damage_vs_target(e)[0]
+                + self.unitSelection.DamageDealBonusToAjustAttackPriority(e)
+                + bonusPriority
+            )
+            #print("shots " + str(shots) + " v " + str(v))
+            e.tpv = v
+
+        eneToAttackSortedList = sorted(
+            attackableEnes,
+            key=lambda e: e.tpv,
+            reverse=True,
+        )
+        #print(eneToAttackSortedList)
+        #print("target " + str(eneToAttackSortedList[0]))
+        u.attack(eneToAttackSortedList[0])
+
+    async def UnitAbilityActive(self, u: Unit, enes: Units):
         if u.type_id == UnitTypeId.SENTRY:
             abilities = await self.bot.get_available_abilities(u)
             if AbilityId.GUARDIANSHIELD_GUARDIANSHIELD in abilities:
                 allies = self.unitSelection.GetUnits(False, True, False)
                 allies = self.unitSelection.UnitsInRangeOfUnit(u, allies, 5)
-                if allies.amount <= 3:
+                if allies.amount <= 2:
                     return
 
                 enes = self.unitSelection.UnitsInRangeOfUnit(u, enes, 10)
-                enes = self.unitSelection.FilterAttack()
+                enes = self.unitSelection.FilterAttack(enes)
                 rangedEneAmount = 0
                 for e in enes:
                     if (
                         e.can_attack_ground
+                        and len(e._weapons) > 0
                         and e._weapons[0]
                         and e._weapons[0].range > 3
                     ):
                         rangedEneAmount += 1
                 if rangedEneAmount > 3:
                     u(AbilityId.GUARDIANSHIELD_GUARDIANSHIELD)
+        if u.type_id == UnitTypeId.VOIDRAY:
+            abilities = await self.bot.get_available_abilities(u)
+            if AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT in abilities:
+                enes = self.unitSelection.UnitsInRangeOfUnit(u, enes, 6.5)
+                if enes:
+                    armoredCount = 0
+                    for e in enes:
+                        if e.is_armored:
+                            armoredCount += 1
+                    if armoredCount * 2 >= enes.amount:
+                        u(AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT)
 
     async def Retreat(self, u: Unit, home_location):
         u.move(home_location)
 
     async def Micro(self):
         bot = self.bot
-        enemies = self.unitSelection.GetUnits(True, workers=True)
-        # enemies_air = self.GetAirEnemies()
-        # enemies_ground = self.GetGroundEnemies()
+        enemiesUnits = self.unitSelection.GetUnits(True, workers=True)
+        eneBuilding = bot.enemy_structures
 
+        enemies: Units = enemiesUnits + eneBuilding
         home_location = self.bot.start_location
-        # enemies_can_attack: Units = enemies.filter(lambda unit: unit.can_attack_ground)
         if not enemies:
             return
-
-        for u in bot.units.ready:
+        allUnits = self.unitSelection.GetUnits(False).ready
+        for u in allUnits:
             if not u.can_attack:
                 continue
             if u.weapon_cooldown < 0:
                 continue
-
-            if u.weapon_cooldown > 0.02:
+            # print(u)
+            await self.UnitAbilityActive(u, enemies)
+            if u.weapon_cooldown > 0.07:
                 await self.MicroMoveUnit(u, home_location, enemies)
                 continue
 
-            await self.SentryForceField(u, enemies)
-            enes = enemies.in_attack_range_of(u)
-            attackableEnes = enes
-            # TODO refactor with
-            # closer_than
-            # in_attack_range_of
-            # stalker.radius
-            # stalker.move(enemy_fighters.closest_to(stalker))
-            # closest_enemy.position.towards(stalker, distance)
-            if not attackableEnes:
-                await self.TryAttackNearbyEnemy(u, 2)
-                continue
-            if attackableEnes.amount == 1:
-                u.attack(attackableEnes.first)  # closest_n_units
-                continue
-            for e in attackableEnes:
-                dmg = u.calculate_damage_vs_target(e)
-                if dmg[0] > e.health + e.shield:
-                    u.attack(e)
-                    continue
-            eneToAttackSortedList = sorted(
-                attackableEnes,
-                key=lambda e: u.calculate_damage_vs_target(e)[0],
-                reverse=False,
-            )
-            u.attack(eneToAttackSortedList[0])
+            attackableEnes = enemies.in_attack_range_of(u)
+            await self.TryAttackEnemies(u, attackableEnes)
             continue
             # u.calculate_damage_vs_target
             # Returns a tuple of: [potential damage against target, attack speed, attack range] : Tuple[float, float, float]:

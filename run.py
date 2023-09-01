@@ -165,7 +165,7 @@ def run():
         # Local game
         print("Starting local game...")
         run_game(
-            sc2.maps.get("Simple96"),  # Simple64
+            sc2.maps.get("Simple96"),  # Simple64 128
             # map password iagreetotheeula
             # sc2.maps.get(args.Map),
             [
@@ -173,6 +173,7 @@ def run():
                 Computer(
                     # Race[args.ComputerRace],
                     Race["Random"],
+                    # Race["Terran"],
                     # Difficulty[args.ComputerDifficulty])],
                     # "Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]
                     Difficulty.CheatVision,

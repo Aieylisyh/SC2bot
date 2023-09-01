@@ -21,7 +21,7 @@ class bot_mainStrategy:
     bot: BotAI
     unitSelection: bot_unitSelection
     tactics: bot_tactics
-    attackForce_min_supply: int = 0
+    attackForce_offset_supply: int = -2
     buildStructure: bot_buildStructure
 
     def __init__(self, bot: BotAI):
@@ -34,10 +34,11 @@ class bot_mainStrategy:
         bot = self.bot
 
         return (
-            self.attackForce_min_supply
-            + bot.townhalls.ready.amount * 15
+            self.attackForce_offset_supply
+            + bot.townhalls.ready.amount * 14
+            + bot.structures(UnitTypeId.PYLON).ready.amount * 2
             - bot.townhalls.not_ready.amount * 20
-            + bot.supply_left * 0.6
+            + bot.supply_left * 0.75
         )
 
     async def Rush(self):
@@ -88,7 +89,9 @@ class bot_mainStrategy:
             if invaders:
                 p = invaders.center
                 forces = self.unitSelection.GetUnits(False).ready.idle
-                forces.append(self.unitSelection.GetUnits(False).closer_than(20, p))
+                forces.append(
+                    self.unitSelection.GetUnits(False).ready.closer_than(24, p)
+                )
                 if forces:
                     for unit in forces:
                         if unit.can_attack:

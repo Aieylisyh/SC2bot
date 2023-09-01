@@ -68,7 +68,7 @@ class bot_trainArmy:
                     if (
                         bot.units(UnitTypeId.OBSERVER).amount
                         + bot.units(UnitTypeId.OBSERVERSIEGEMODE).amount
-                    ) < townhallAmount * 1.25 - 0.5:
+                    ) < townhallAmount * 0.7 + 0.6:
                         vr.train(UnitTypeId.OBSERVER)
         # build Vs units
         if bot.structures(UnitTypeId.STARGATE):
@@ -86,19 +86,15 @@ class bot_trainArmy:
         uid = UnitTypeId.STALKER
         townhallAmount = bot.townhalls.amount
         if (
-            mgRatio > 1.5
-            and bot.units(UnitTypeId.ZEALOT).amount < 4 * townhallAmount - 1
+            mgRatio > 1.4 and bot.units(UnitTypeId.ZEALOT).amount < 4 * townhallAmount
         ) or (
-            mgRatio > 2.5 and bot.units(UnitTypeId.ZEALOT).amount < 5 * townhallAmount
+            mgRatio > 2.5
+            and bot.units(UnitTypeId.ZEALOT).amount < 5 * townhallAmount + 1
         ):
             uid = UnitTypeId.ZEALOT
-        if (
-            mgRatio < 0.4
-            and bot.vespene > 200
-            and bot.units(UnitTypeId.SENTRY).amount < townhallAmount + 1
-        ):
+        if mgRatio < 0.45 and bot.units(UnitTypeId.SENTRY).amount < townhallAmount + 1:
             uid = UnitTypeId.SENTRY
-        if mgRatio > 1.2 and bot.units(UnitTypeId.ADEPT).amount < 2:
+        if mgRatio > 1.5 and bot.units(UnitTypeId.ADEPT).amount < 2:
             uid = UnitTypeId.ADEPT
 
         if bot.can_afford(uid):

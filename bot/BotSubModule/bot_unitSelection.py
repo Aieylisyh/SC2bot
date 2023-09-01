@@ -36,13 +36,15 @@ class bot_unitSelection:
 
     def DamageDealBonusToAjustAttackPriority(self, u: Unit):
         if u.is_hallucination:
-            return -100
+            return -60
         if u.is_constructing_scv or u.is_carrying_resource:
-            return 10
+            return 7
+        if u.is_structure:
+            return -5
         if u.type_id in {
             UnitTypeId.LARVA,
         }:
-            return -5
+            return -6
         if u.type_id in {
             UnitTypeId.ROACH,
             UnitTypeId.EGG,
@@ -54,7 +56,7 @@ class bot_unitSelection:
             UnitTypeId.MULE,
             UnitTypeId.DRONE,
         }:
-            return 5
+            return 3
         if u.type_id in {
             UnitTypeId.SIEGETANK,
             UnitTypeId.SIEGETANKSIEGED,
@@ -66,7 +68,7 @@ class bot_unitSelection:
             UnitTypeId.VIPER,
             UnitTypeId.WIDOWMINE,
         }:
-            return 4
+            return 2
         if u.type_id in {
             UnitTypeId.MARINE,
             UnitTypeId.DARKTEMPLAR,
@@ -80,15 +82,35 @@ class bot_unitSelection:
             UnitTypeId.QUEEN,
             # TODO
         }:
-            return 2
+            return 1
         return 0
 
     def GetUnitPowerValue(self, u: Unit):
         bot = self.bot
+        if u.is_structure:
+            if u.type_id in {
+                UnitTypeId.BUNKER,
+                UnitTypeId.MISSILETURRET,
+                UnitTypeId.SPINECRAWLER,
+                UnitTypeId.SPORECANNON,
+                UnitTypeId.PHOTONCANNON,
+            }:
+                return 250
+            if u.type_id in {
+                UnitTypeId.PLANETARYFORTRESS,
+            }:
+                return 750
+            return 0
+
+        if u.type_id in {
+            UnitTypeId.LARVA,
+            UnitTypeId.EGG,
+            UnitTypeId.MULE,
+        }:
+            return 0
         if u.type_id in {
             UnitTypeId.SCV,
             UnitTypeId.PROBE,
-            UnitTypeId.MULE,
             UnitTypeId.DRONE,
         }:
             return 20

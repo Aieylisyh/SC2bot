@@ -24,7 +24,7 @@ class bot_buildStructure:
     def __init__(self, bot: BotAI):
         self.bot = bot
 
-    target_BG_Count: int = 5
+    target_BG_Count: int = 4
 
     supply_nexus = 15
     supply_pylon = 8
@@ -246,7 +246,7 @@ class bot_buildStructure:
             UnitTypeId.TWILIGHTCOUNCIL,
             0.3,
         )
-        # BG 3~7
+        # BG 3~4
         if bot.supply_used > 99:
             await self.buildOne(
                 UnitTypeId.GATEWAY,
