@@ -68,7 +68,7 @@ class bot_trainArmy:
                     if (
                         bot.units(UnitTypeId.OBSERVER).amount
                         + bot.units(UnitTypeId.OBSERVERSIEGEMODE).amount
-                    ) < townhallAmount * 0.7 + 0.6:
+                    ) < townhallAmount * 0.6 + 0.5:
                         vr.train(UnitTypeId.OBSERVER)
         # build Vs units
         if bot.structures(UnitTypeId.STARGATE):

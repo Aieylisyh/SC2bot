@@ -142,7 +142,7 @@ class bot_buildStructure:
             and supplyLeft < 7
             or supplyUsed > 100
             and supplyLeft < 10
-            or supplyUsed > 64
+            or supplyUsed > 60
             and supplyLeft < 8
             or supplyUsed > 30
             and supplyLeft < 6

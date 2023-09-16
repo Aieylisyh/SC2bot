@@ -133,7 +133,9 @@ class bot_unitSelection:
         return units
 
     def FilterDetectors(self, units: Units):
-        units = units.filter(lambda unit: unit.is_detector)
+        units = units.filter(
+            lambda unit: unit.is_detector or unit.type_id == UnitTypeId.OVERLORDCOCOON
+        )
         return units
 
     def FilterCloaked(self, units: Units, allowRevealed: bool = True):

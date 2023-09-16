@@ -165,13 +165,20 @@ def run():
         # Local game
         print("Starting local game...")
         run_game(
-            sc2.maps.get("Simple96"),  # Simple64 128
+            sc2.maps.get("DragonScalesAIE"),
+            # Simple64 128 96
+            # AncientCisternAIE
+            # GoldenauraAIE
+            # DragonScalesAIE
+            # GresvanAIE InfestationStationAIE RoyalBloodAIE
             # map password iagreetotheeula
             # sc2.maps.get(args.Map),
             [
                 bot,
                 Computer(
                     # Race[args.ComputerRace],
+                    # Race["Protoss"],
+                    # Race["Zerg"],
                     Race["Random"],
                     # Race["Terran"],
                     # Difficulty[args.ComputerDifficulty])],

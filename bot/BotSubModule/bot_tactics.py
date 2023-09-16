@@ -199,21 +199,16 @@ class bot_tactics:
         bot = self.bot
         enemiesUnits = self.unitSelection.GetUnits(True, workers=True)
         enemies = enemiesUnits + bot.enemy_structures
-
+        # python  append没有返回值 可以用 加号
         if not enemiesUnits:
             if enemies.amount > 0:
                 u.move(u.position.towards(enemies.center))
             return
         nearestEne: Unit = enemiesUnits.closest_to(u)
-        isMeleeFactor = 1
-        if u._weapons and u._weapons[0].range <= 2:
-            isMeleeFactor = 10
-        elif u._weapons and u._weapons[0].range <= 4:
-            isMeleeFactor = 2.5
-
-        if isMeleeFactor >= 10:
-            u.move(u.position.towards(nearestEne.position))
-            return
+        isMelee = False
+        if u._weapons:
+            if u._weapons[0].range <= 3.25:
+                isMelee = True
 
         lowHpFactor = 0
         if u.shield_health_percentage < 0.5:
@@ -224,12 +219,14 @@ class bot_tactics:
         allies = self.unitSelection.GetUnits(False)
         allies = self.unitSelection.FilterAttack(allies)
         allies = allies.ready.filter(lambda unit: not unit == u)
-        allyForce = self.GetNearbyForceEstimate(u, allies) * isMeleeFactor
+        allyForce = self.GetNearbyForceEstimate(u, allies)
         eneForce = self.GetNearbyForceEstimate(u, enemies)
         weAreStronger = allyForce > eneForce * 1.6 + lowHpFactor
         if u.is_flying:
             weAreStronger = False
         weAreWeaker = allyForce < eneForce * 1 + lowHpFactor
+        if isMelee and not weAreWeaker:
+            weAreStronger = True
         # print(   "weAreStronger " + str(weAreStronger) + " weAreWeaker " + str(weAreWeaker) )
         if weAreStronger:
             u.move(u.position.towards(nearestEne.position))
@@ -237,14 +234,19 @@ class bot_tactics:
 
         if u.type_id == UnitTypeId.STALKER and (random.random() > 0.5 or weAreWeaker):
             await self.StalkerEscape(u, home_location, enemies_can_attack)
-
+            return
         if weAreWeaker:
             await self.Retreat(u, home_location)
+            return
+
+        await self.MoveToTacticPos(u, home_location)
+
+    async def MoveToTacticPos(self, u: Unit, home_location: Point2):
+        r = random.random() > 0.35
+        if r:
+            u.move(home_location)
         else:
-            if random.random() > 0.5:
-                u.move(home_location)
-            else:
-                await self.MoveUnitsTogether(u, home_location)
+            await self.MoveUnitsTogether(u, home_location)
 
     def GetNearbyForceEstimate(self, u: Unit, allies: Units):
         res = 0
@@ -266,14 +268,14 @@ class bot_tactics:
         if attackableEnes.amount == 1:
             u.attack(attackableEnes.first)  # closest_n_units
             return
-        #print("shots attackableEnes")
-        #print(attackableEnes)
+        # print("shots attackableEnes")
+        # print(attackableEnes)
         for e in attackableEnes:
             dmg = u.calculate_damage_vs_target(e)
             dmgValue = dmg[0]
             eneHp = e.health + e.shield
             shots = 10
-            #print(e)
+            # print(e)
             if dmgValue > 0:
                 shots = float(eneHp) / dmgValue
             bonusPriority = 0
@@ -291,7 +293,7 @@ class bot_tactics:
                 + self.unitSelection.DamageDealBonusToAjustAttackPriority(e)
                 + bonusPriority
             )
-            #print("shots " + str(shots) + " v " + str(v))
+            # print("shots " + str(shots) + " v " + str(v))
             e.tpv = v
 
         eneToAttackSortedList = sorted(
@@ -299,8 +301,8 @@ class bot_tactics:
             key=lambda e: e.tpv,
             reverse=True,
         )
-        #print(eneToAttackSortedList)
-        #print("target " + str(eneToAttackSortedList[0]))
+        # print(eneToAttackSortedList)
+        # print("target " + str(eneToAttackSortedList[0]))
         u.attack(eneToAttackSortedList[0])
 
     async def UnitAbilityActive(self, u: Unit, enes: Units):
@@ -357,7 +359,7 @@ class bot_tactics:
                 continue
             # print(u)
             await self.UnitAbilityActive(u, enemies)
-            if u.weapon_cooldown > 0.07:
+            if u.weapon_cooldown >= 0.1:
                 await self.MicroMoveUnit(u, home_location, enemies)
                 continue
 

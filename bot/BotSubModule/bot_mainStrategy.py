@@ -23,6 +23,7 @@ class bot_mainStrategy:
     tactics: bot_tactics
     attackForce_offset_supply: int = -2
     buildStructure: bot_buildStructure
+    defendRange: int = 25
 
     def __init__(self, bot: BotAI):
         self.bot = bot
@@ -37,8 +38,8 @@ class bot_mainStrategy:
             self.attackForce_offset_supply
             + bot.townhalls.ready.amount * 14
             + bot.structures(UnitTypeId.PYLON).ready.amount * 2
-            - bot.townhalls.not_ready.amount * 20
-            + bot.supply_left * 0.75
+            - bot.townhalls.not_ready.amount * 21
+            + bot.supply_left * 0.8
         )
 
     async def Rush(self):
@@ -54,11 +55,29 @@ class bot_mainStrategy:
             print("startingGame_stalkersRushed")
             bot.startingGame_stalkersRushed = True
 
+    async def clear_map(self):
+        bot = self.bot
+
     def AttackWithAllForces(self, includeWorkers: bool = True):
         bot = self.bot
         forces = self.unitSelection.GetUnits(False, workers=includeWorkers, air=True)
         # TODO Bug that void Ray has no weapon!
         forces = self.unitSelection.FilterAttack(forces)
+        if bot.supply_used > 150:
+            ground_enemies = bot.enemy_units.filter(
+                lambda unit: not unit.is_flying
+                and unit.type_id not in {UnitTypeId.LARVA, UnitTypeId.EGG}
+            )
+            # we dont see anything so start to clear the map
+            if not ground_enemies:
+                for unit in forces:
+                    # clear found structures
+                    if bot.enemy_structures:
+                        unit.move(bot.enemy_structures.closest_to(unit))
+                    # check bases to find new structures
+                    else:
+                        unit.move(bot.all_enemy_units.first)
+                return
         t = bot.enemy_start_locations[0]
         for unit in forces:
             if unit.can_attack:
@@ -83,14 +102,16 @@ class bot_mainStrategy:
             invaders: Units = None
             for t in ts:
                 if not invaders:
-                    invaders == enes.closer_than(24, t)
+                    invaders == enes.closer_than(self.defendRange, t)
                 else:
-                    invaders.append(enes.closer_than(24, t))
+                    invaders.append(enes.closer_than(self.defendRange, t))
             if invaders:
                 p = invaders.center
                 forces = self.unitSelection.GetUnits(False).ready.idle
                 forces.append(
-                    self.unitSelection.GetUnits(False).ready.closer_than(24, p)
+                    self.unitSelection.GetUnits(False).ready.closer_than(
+                        self.defendRange, p
+                    )
                 )
                 if forces:
                     for unit in forces:

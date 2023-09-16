@@ -96,7 +96,7 @@ class bot_economy:
             vgs = self.bot.vespene_geyser.closer_than(15, townhall)
             assimilatorAmount = (
                 self.bot.structures(UnitTypeId.ASSIMILATOR)
-                .closer_than(12, townhall)
+                .closer_than(15, townhall)
                 .amount
             )
             # print("assimilatorAmount should less than")
@@ -320,12 +320,13 @@ class bot_economy:
     async def Expand(self):
         # expand base
         bot = self.bot
+        baseCount = self.buildStructure.GetBuildingCount(UnitTypeId.NEXUS)
+        if baseCount >= 2 and bot.supply_used < 90:
+            return
         if bot.startingGame_stalkersBuilt < 2:
             return
-
         if (
-            self.buildStructure.GetBuildingCount(UnitTypeId.NEXUS)
-            < self.target_Base_Count
+            baseCount < self.target_Base_Count
             and bot.supply_workers
             >= bot.townhalls.amount * self.workerCapPerTownhall - 5
         ):
