@@ -76,9 +76,10 @@ class MissionSystem:
         # currentMissions: [MissionInstance]
         # unitsAssignedMission: Set[int]  # 记录unit的tag的临时表
         for m in self.pendingMissions:
-            toStart = m.CheckStart()
-            if toStart:
+            state = m.CheckState()
+            if state == MissionState.Doing:
                 self.AddCurrent(m.id)
+                self.pendingMissions.remove(m)
 
         crtMissions = sorted(
             self.currentMissions,
@@ -87,7 +88,10 @@ class MissionSystem:
         )
 
         for m in crtMissions:
+            state = m.CheckState()
             print(m)
+            if state == MissionState.Done:
+                self.currentMissions.remove(m)
             # m.Do()
         return
         await self.tactics.ScoutWithOb()
@@ -106,14 +110,18 @@ class MissionSystem:
 
     def AddCurrent(self, id: str):
         proto = self.GetPrototype(id)
-        self.currentMissions += MissionInstance(self.bot, proto)
-        print("add crt mission " + id)
+        m = MissionInstance(self.bot, proto)
+        m.state = MissionState.Doing
+        self.currentMissions += m
+        print("add crt mission " + proto.id)
 
     def AddPending(self, id: str):
         if self.GetPending(id):
             return
         proto = self.GetPrototype(id)
-        self.pendingMissions.add(MissionInstance(self.bot, proto))
+        m = MissionInstance(self.bot, proto)
+        m.state = MissionState.Pending
+        self.pendingMissions.add(m)
         print("add pending mission " + proto.id)
 
     def GetCurrents(self, id: str) -> [MissionInstance]:

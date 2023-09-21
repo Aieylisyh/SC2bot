@@ -13,7 +13,6 @@ from sc2 import maps
 from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
-from bot.BotSubModule.Mission.MissionInstance import MissionInstance
 import asyncio
 
 
