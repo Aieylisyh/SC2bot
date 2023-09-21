@@ -53,7 +53,7 @@ class MissionInstance:
     proto: MissionPrototype
     layer: int
     piority: int = 1
-    progontanists: [Progontanist]
+    progontanists: list[Progontanist]
     # triggers if score>100
     # if this is in pending list, this decide whether to start this
     # if this is in current list, this decide whether to pending another mission of this kind
@@ -64,7 +64,7 @@ class MissionInstance:
     negativeScore: int = 0
 
     targetPosition: Point2
-
+    homePosition: Point2
     mainStrategy: bot_mainStrategy
     tactics: bot_tactics
     unitSelection: bot_unitSelection
@@ -129,72 +129,118 @@ class MissionInstance:
                 p.log = "go"
                 self.progontanists += [p]
 
+            self.homePosition = bot.start_location
+            self.log = "doing"
             self.targetPosition = bot.enemy_start_locations[0].position
-
-            for p in self.progontanists:
-                adept: Unit = p.p
-                abilities = await self.bot.get_available_abilities(f)
-                if AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities:
-                    adept(
-                        AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT,
-                        target=self.targetPosition,
-                        queue=False,
-                    )
-                adept.attack(self.targetPosition)
             print("AdeptRush!")
             await bot.chat_send("AdeptRush!")
-            self.log = "doing"
 
         elif self.log == "doing":
-            enes: Units = self.unitSelection.GetUnits(True).ready
-            enes = self.unitSelection.UnitsInRangeOfUnit()
+            if len(self.progontanists) <= 0:
+                self.state = MissionState.Done
+                return
 
-            ########################## helper ################################
-            e: Unit = enes.first
-            e in enes
-            workers = enes.filter(
-                lambda unit: unit.type_id
-                in {UnitTypeId.PROBE, UnitTypeId.SCV, UnitTypeId.DRONE}
-            )
-            ########################## helper ################################
+            for p in self.progontanists:
+                self.CheckSurrounding_Adept(p)
 
-            weakEnes = enes.filter(
-                lambda unit: unit.is_light and (unit.shield + unit.health) < 60
-            )
-            Threats = enes.filter(
-                lambda unit: unit.can_attack_ground and (not unit in weakEnes)
-            )
+            for p in self.progontanists.copy():
+                if not p.p:
+                    self.progontanists.remove(p)
+                    continue
 
-            for progontanist in self.progontanists:
-                p: Progontanist = progontanist
-                adept = p.p
-                insight_threats = self.unitSelection.UnitsInRangeOfUnit(
-                    adept, Threats, 14
+                await self.Act_Adept(p)
+
+                if self.log == "retreat":
+                    self.progontanists.remove(p)
+
+    def CheckSurrounding_Adept(self, p: Progontanist):
+        adept = p.p
+        bot = self.bot
+        enes: Units = self.unitSelection.GetUnits(True).ready
+        enes = self.unitSelection.UnitsInRangeOfUnit(adept, enes, 14)
+
+        if not enes:
+            if p.log == "go":
+                return
+            elif p.log == "attack":
+                p.log = "go"
+                return
+            elif p.log == "retreat":
+                return
+        ########################## helper ################################
+        e: Unit = enes.first
+        # e in enes
+        # workers = enes.filter( lambda unit: unit.type_id  in {UnitTypeId.PROBE, UnitTypeId.SCV, UnitTypeId.DRONE}   )
+        ########################## helper ################################
+
+        targetUnits = enes.filter(
+            lambda unit: unit.is_light and (unit.shield + unit.health) < 60
+        )
+        threatsUnits = enes.filter(
+            lambda unit: unit.can_attack_ground and (not unit in targetUnits)
+        )
+
+        threat = 0
+        for threatEne in threatsUnits:
+            ThreatRange = max(6, threatEne.ground_range)
+            dist = bot.distance_math_hypot(threatEne, adept)
+            outOfThreatDist = dist - ThreatRange
+            dps = threatEne.calculate_dps_vs_target(
+                adept, include_overkill_damage=False
+            )
+            threatAttackMeTime = 0
+            if outOfThreatDist > 0:
+                threatAttackMeTime = outOfThreatDist / threatEne.movement_speed
+            if threatAttackMeTime <= 0.5:
+                threat += dps
+            elif threatAttackMeTime <= 2:
+                threat += dps * 0.6
+            elif threatAttackMeTime <= 4:
+                threat += dps * 0.3
+            else:
+                threat += dps * 0.1
+        if threat > 0:
+            print("CheckSurrounding_Adept threat: " + str(threat))
+        if threat >= 10:
+            # dangerous
+            p.log = "retreat"
+            return
+
+        insight_targets = self.unitSelection.UnitsInRangeOfUnit(adept, targetUnits, 9.5)
+        if insight_targets:
+            p.log = "attack"
+            return
+
+    async def Act_Adept(self, p: Progontanist):
+        if p.log == "go":
+            await self.Run_Adept(p.p, self.targetPosition, 30, True)
+        elif p.log == "attack":
+            await self.Run_Adept(p.p, self.targetPosition, 16, False)
+        elif p.log == "retreat":
+            await self.Run_Adept(p.p, self.homePosition, 30, False)
+
+    async def Run_Adept(
+        self,
+        adept: Unit,
+        targetPos,
+        attackBtwValue: float = 0,  # 0 no attack,>25 is about attack good targets only
+        allow_PHASESHIFT: bool = True,
+    ):
+        if allow_PHASESHIFT:
+            abilities = await self.bot.get_available_abilities(adept)
+            if AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities:
+                adept(
+                    AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT,
+                    target=self.targetPosition,
+                    queue=False,
                 )
-                threat = 0
-                for threatEne in insight_threats:
-                    ThreatRange = max(6, threatEne.ground_range)
-                    dist = bot.distance_math_hypot(threatEne, adept)
-                    outOfThreatDist = dist - ThreatRange
-                    dps = threatEne.calculate_dps_vs_target(
-                        adept, include_overkill_damage=False
-                    )
-                    threatAttackMeTime = 0
-                    if outOfThreatDist > 0:
-                        threatAttackMeTime = outOfThreatDist / threatEne.movement_speed
-                    if threatAttackMeTime <= 0.5:
-                        threat += dps
-                    elif threatAttackMeTime <= 2:
-                        threat += dps * 0.6
-                    elif threatAttackMeTime <= 4:
-                        threat += dps * 0.3
-                    else:
-                        threat += dps * 0.1
-                if threat >= 10:
-                    # dangerous
-                    self.tactics.Retreat(adept, None)
-                    self.log = "retreat"
 
-                insight_targets = self.unitSelection.UnitsInRangeOfUnit(
-                    adept, weakEnes, 9.5
-                )
+        if attackBtwValue > 0:
+            info = self.tactics.GetGoodAttackInfo(adept, 0.4, onlyShots=3)
+            if info[0]:
+                print("Run_Adept attackBtw " + str(info[2]))
+                print(info[1])
+                if info[2] > attackBtwValue:
+                    adept.attack(info[1])
+
+        adept.move(targetPos)

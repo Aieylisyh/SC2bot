@@ -298,50 +298,6 @@ class bot_tactics:
             res += self.unitSelection.GetUnitPowerValue(a) * 0.25
         return res
 
-    async def TryAttackEnemies(self, u: Unit, attackableEnes: Units):
-        bot = self.bot
-        if not attackableEnes:
-            return
-        if attackableEnes.amount == 1:
-            u.attack(attackableEnes.first)  # closest_n_units
-            return
-        # print("shots attackableEnes")
-        # print(attackableEnes)
-        for e in attackableEnes:
-            dmg = u.calculate_damage_vs_target(e)
-            dmgValue = dmg[0]
-            eneHp = e.health + e.shield
-            shots = 10
-            # print(e)
-            if dmgValue > 0:
-                shots = float(eneHp) / dmgValue
-            bonusPriority = 0
-            if shots <= 1:
-                bonusPriority = 60
-            elif shots <= 2:
-                bonusPriority = 32
-            elif shots <= 3:
-                bonusPriority = 16
-            elif shots <= 4:
-                bonusPriority = 8
-
-            v = (
-                u.calculate_damage_vs_target(e)[0]
-                + self.unitSelection.DamageDealBonusToAjustAttackPriority(e)
-                + bonusPriority
-            )
-            # print("shots " + str(shots) + " v " + str(v))
-            e.tpv = v
-
-        eneToAttackSortedList = sorted(
-            attackableEnes,
-            key=lambda e: e.tpv,
-            reverse=True,
-        )
-        # print(eneToAttackSortedList)
-        # print("target " + str(eneToAttackSortedList[0]))
-        u.attack(eneToAttackSortedList[0])
-
     async def UnitAbilityActive(self, u: Unit, enes: Units):
         if u.type_id == UnitTypeId.SENTRY:
             abilities = await self.bot.get_available_abilities(u)
@@ -385,28 +341,108 @@ class bot_tactics:
         bot = self.bot
         enemiesUnits = self.unitSelection.GetUnits(True, workers=True)
         eneBuilding = bot.enemy_structures
-
         enemies: Units = enemiesUnits + eneBuilding
         home_location = self.bot.start_location
         if not enemies:
             return
         allUnits = self.unitSelection.GetUnits(False).ready
         for u in allUnits:
-            if not u.can_attack:
-                continue
-            if u.weapon_cooldown < 0:
-                continue
             # print(u)
             await self.UnitAbilityActive(u, enemies)
-            if u.weapon_cooldown >= 0.01:
-                await self.MicroMoveUnit(u, home_location, enemies)
+
+            info = self.GetGoodAttackInfo(u, 0.05, 5)
+            if info[0]:
+                await u.attack(info[1])
                 continue
-            try:
-                attackableEnes = enemies.in_attack_range_of(u)
-                await self.TryAttackEnemies(u, attackableEnes)
-            except ValueError as e:
-                print(e)
-                print(type(e))
+            await self.MicroMoveUnit(u, home_location, enemies)
             continue
+
+    # attack only when this attack is very high cost efficiency
+    # no wait, high damage bonus, one shot, etc
+    def GetGoodAttackInfo(
+        self,
+        u: Unit,
+        cdThreshold: float = 0.5,
+        allowShots: int = 4,
+        onlyShots: int = -1,
+    ) -> tuple[bool, Unit, float]:
+        if not u.can_attack:
+            return tuple(False, None, 0)
+        if u.weapon_cooldown < 0:
+            return tuple(False, None, 0)
+        bot = self.bot
+        if u.weapon_cooldown > cdThreshold:
+            return tuple(False, None, 0)
+
+        enemiesUnits = self.unitSelection.GetUnits(True, workers=True)
+        if not enemiesUnits:
+            return tuple(False, None, 0)
+        eneBuilding = bot.enemy_structures
+        enemies: Units = enemiesUnits + eneBuilding
+        if not enemies:
+            return tuple(False, None, 0)
+
+        groundEnes = enemies.filter(lambda u: u.is_structure or (not u.is_flying))
+        airEnes = enemies.filter(lambda u: u.is_flying)
+
+        attackableEnes: Units = Units(None, bot)
+        distCanGo = u.weapon_cooldown * u.movement_speed
+        if u.real_speed < u.movement_speed:
+            distCanGo * 0.6
+
+        if u.can_attack_ground:
+            attackableEnes.append(
+                self.unitSelection.UnitsInRangeOfUnit(
+                    u, groundEnes, u.ground_range + distCanGo
+                )
+            )
+        if u.can_attack_air:
+            attackableEnes.append(
+                self.unitSelection.UnitsInRangeOfUnit(
+                    u, airEnes, u.air_range + distCanGo
+                )
+            )
+
+        if not attackableEnes:
+            return tuple(False, None, 0)
+
+        for e in attackableEnes:
+            dmg = u.calculate_damage_vs_target(e)
             # u.calculate_damage_vs_target
             # Returns a tuple of: [potential damage against target, attack speed, attack range] : Tuple[float, float, float]:
+            dmgValue = dmg[0]
+            eneHp = e.health + e.shield
+            shots = 10
+            # print(e)
+            if dmgValue > 0:
+                shots = float(eneHp) / dmgValue
+                if onlyShots > 0 and shots > onlyShots:
+                    return tuple(False, None, 0)
+            oneShotBonus = 0
+            if shots <= 1:
+                oneShotBonus = 60
+            elif allowShots >= 2 and shots <= 2:
+                oneShotBonus = 32
+            elif allowShots >= 3 and shots <= 3:
+                oneShotBonus = 16
+            elif allowShots >= 4 and shots <= 4:
+                oneShotBonus = 8
+            elif allowShots >= 5 and shots <= 5:
+                oneShotBonus = 3
+            dmg = u.calculate_damage_vs_target(e)[0]
+            e.tpv = (
+                dmg
+                + oneShotBonus
+                + self.unitSelection.DamageDealBonusToAjustAttackPriority(e)
+                - u.weapon_cooldown * dmg * 0.6
+            )
+
+        eneToAttackSortedList = sorted(
+            attackableEnes,
+            key=lambda e: e.tpv,
+            reverse=True,
+        )
+        # print(eneToAttackSortedList)
+        # print("target " + str(eneToAttackSortedList[0]))
+        bestToAttackUnit = eneToAttackSortedList[0]
+        return tuple(True, bestToAttackUnit, bestToAttackUnit.tpv)

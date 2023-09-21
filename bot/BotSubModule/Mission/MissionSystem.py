@@ -27,8 +27,8 @@ from bot.BotSubModule.Mission.MissionPrototypes.ObserverScout import ObserverSco
 
 
 class MissionSystem:
-    pendingMissions: Set[MissionInstance]
-    currentMissions: [MissionInstance]
+    pendingMissions: set[MissionInstance]
+    currentMissions: list[MissionInstance]
     unitsAssignedMission: Set[int]  # 记录unit的tag的临时表
 
     defaultMissions_test: Set[str] = [
@@ -62,7 +62,7 @@ class MissionSystem:
         self.mainStrategy = bot_mainStrategy(bot)
 
         self.pendingMissions = set()
-        self.currentMissions = []
+        self.currentMissions = list()
 
     async def Init(self):
         self.tactics.Init()
