@@ -139,6 +139,10 @@ class MissionInstance:
             if len(self.progontanists) <= 0:
                 self.state = MissionState.Done
                 return
+            for p in self.progontanists.copy():
+                if not p.p:
+                    self.progontanists.remove(p)
+                    continue
 
             for p in self.progontanists:
                 self.CheckSurrounding_Adept(p)
@@ -183,7 +187,7 @@ class MissionInstance:
         threat = 0
         for threatEne in threatsUnits:
             ThreatRange = max(6, threatEne.ground_range)
-            dist = bot.distance_math_hypot(threatEne, adept)
+            dist = bot.distance_math_hypot(threatEne.position, adept.position)
             outOfThreatDist = dist - ThreatRange
             dps = threatEne.calculate_dps_vs_target(
                 adept, include_overkill_damage=False
@@ -213,11 +217,11 @@ class MissionInstance:
 
     async def Act_Adept(self, p: Progontanist):
         if p.log == "go":
-            await self.Run_Adept(p.p, self.targetPosition, 30, True)
+            await self.Run_Adept(p.p, self.targetPosition, 34, True)
         elif p.log == "attack":
-            await self.Run_Adept(p.p, self.targetPosition, 16, False)
+            await self.Run_Adept(p.p, self.targetPosition, 18, False)
         elif p.log == "retreat":
-            await self.Run_Adept(p.p, self.homePosition, 30, False)
+            await self.Run_Adept(p.p, self.homePosition, 34, False)
 
     async def Run_Adept(
         self,

@@ -13,7 +13,6 @@ from sc2 import maps
 from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
-import asyncio
 
 
 class bot_tactics:
@@ -24,12 +23,10 @@ class bot_tactics:
 
     def __init__(self, bot: BotAI):
         self.bot = bot
-
-    def Init(self):
+        self.unitSelection = self.bot.unitSelection
         self.scouts_and_spots = {}
         self.scoutTargetIndex = 0
         self.ordered_expansions = None
-        self.unitSelection = self.bot.mission.unitSelection
 
     # Cancel building on attack
     async def CancelAttackedBuildings(self):
@@ -367,44 +364,53 @@ class bot_tactics:
         onlyShots: int = -1,
     ) -> tuple[bool, Unit, float]:
         if not u.can_attack:
-            return tuple(False, None, 0)
+            return (False, None, 0)
         if u.weapon_cooldown < 0:
-            return tuple(False, None, 0)
+            return (False, None, 0)
         bot = self.bot
         if u.weapon_cooldown > cdThreshold:
-            return tuple(False, None, 0)
+            return (False, None, 0)
 
         enemiesUnits = self.unitSelection.GetUnits(True, workers=True)
         if not enemiesUnits:
-            return tuple(False, None, 0)
+            return (False, None, 0)
         eneBuilding = bot.enemy_structures
         enemies: Units = enemiesUnits + eneBuilding
         if not enemies:
-            return tuple(False, None, 0)
+            return (False, None, 0)
 
         groundEnes = enemies.filter(lambda u: u.is_structure or (not u.is_flying))
         airEnes = enemies.filter(lambda u: u.is_flying)
 
-        attackableEnes: Units = Units(None, bot)
+        attackableEnes: Units = None
         distCanGo = u.weapon_cooldown * u.movement_speed
         if u.real_speed < u.movement_speed:
             distCanGo * 0.6
 
         if u.can_attack_ground:
-            attackableEnes.append(
-                self.unitSelection.UnitsInRangeOfUnit(
+            if attackableEnes:
+                attackableEnes.append(
+                    self.unitSelection.UnitsInRangeOfUnit(
+                        u, groundEnes, u.ground_range + distCanGo
+                    )
+                )
+            else:
+                attackableEnes = self.unitSelection.UnitsInRangeOfUnit(
                     u, groundEnes, u.ground_range + distCanGo
                 )
-            )
         if u.can_attack_air:
-            attackableEnes.append(
-                self.unitSelection.UnitsInRangeOfUnit(
+            if attackableEnes:
+                attackableEnes.append(
+                    self.unitSelection.UnitsInRangeOfUnit(
+                        u, airEnes, u.air_range + distCanGo
+                    )
+                )
+            else:
+                attackableEnes = self.unitSelection.UnitsInRangeOfUnit(
                     u, airEnes, u.air_range + distCanGo
                 )
-            )
-
         if not attackableEnes:
-            return tuple(False, None, 0)
+            return (False, None, 0)
 
         for e in attackableEnes:
             dmg = u.calculate_damage_vs_target(e)
@@ -417,7 +423,7 @@ class bot_tactics:
             if dmgValue > 0:
                 shots = float(eneHp) / dmgValue
                 if onlyShots > 0 and shots > onlyShots:
-                    return tuple(False, None, 0)
+                    return (False, None, 0)
             oneShotBonus = 0
             if shots <= 1:
                 oneShotBonus = 60
@@ -445,4 +451,4 @@ class bot_tactics:
         # print(eneToAttackSortedList)
         # print("target " + str(eneToAttackSortedList[0]))
         bestToAttackUnit = eneToAttackSortedList[0]
-        return tuple(True, bestToAttackUnit, bestToAttackUnit.tpv)
+        return (True, bestToAttackUnit, bestToAttackUnit.tpv)

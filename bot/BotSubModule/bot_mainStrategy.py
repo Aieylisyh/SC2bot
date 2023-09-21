@@ -28,9 +28,9 @@ class bot_mainStrategy:
     def __init__(self, bot: BotAI):
         self.bot = bot
 
-    def Init(self):
-        self.unitSelection = self.bot.mission.unitSelection
-        self.tactics = self.bot.mission.tactics
+    def Init(self, mission):
+        self.unitSelection = self.bot.unitSelection
+        self.tactics = mission.tactics
         self.buildStructure = self.bot.buildStructure
 
     def GetLaunchAttackUnitSupplyCap(self):

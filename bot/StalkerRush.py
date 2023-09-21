@@ -16,6 +16,7 @@ from bot.BotSubModule.bot_trainArmy import bot_trainArmy
 from bot.BotSubModule.bot_nexusSkill import bot_nexusSkill
 from bot.BotSubModule.bot_tech import bot_tech
 from bot.BotSubModule.Mission.MissionSystem import MissionSystem
+from bot.BotSubModule.bot_unitSelection import bot_unitSelection
 
 # learn source：https://brax.gg/python-sc2-advanced-bot/
 
@@ -33,6 +34,7 @@ class StalkerRushBot(BotAI):
     tech: bot_tech
     trainArmy: bot_trainArmy
     nexusSkill: bot_nexusSkill
+    unitSelection: bot_unitSelection
 
     startingGame_rusherBuilt: int = 0
     midEarlyGame_oracleBuilt: int = 0
@@ -49,15 +51,13 @@ class StalkerRushBot(BotAI):
         await self.mission.DoIter3()
 
     async def on_start(self):
-        self.mission = MissionSystem(self)
-
         self.buildStructure = bot_buildStructure(self)
         self.economy = bot_economy(self)
         self.tech = bot_tech(self)
         self.trainArmy = bot_trainArmy(self)
         self.nexusSkill = bot_nexusSkill(self)
-
-        await self.mission.Init()
+        self.unitSelection = bot_unitSelection(self)
+        self.mission = MissionSystem(self)
         await self.economy.StartGameAllocateWorkers()
 
     async def on_end(self, result):

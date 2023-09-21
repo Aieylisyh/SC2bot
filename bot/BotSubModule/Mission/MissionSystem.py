@@ -57,17 +57,13 @@ class MissionSystem:
     def __init__(self, bot: BotAI):
         self.bot = bot
 
-        self.unitSelection = bot_unitSelection(bot)
+        self.unitSelection = bot.unitSelection
         self.tactics = bot_tactics(bot)
         self.mainStrategy = bot_mainStrategy(bot)
 
         self.pendingMissions = set()
         self.currentMissions = list()
-
-    async def Init(self):
-        self.tactics.Init()
-        self.mainStrategy.Init()
-
+        self.mainStrategy.Init(self)
         for m in self.defaultMissions_test:
             self.AddPending(m)
 
