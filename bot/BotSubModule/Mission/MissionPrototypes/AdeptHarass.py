@@ -16,8 +16,22 @@ import asyncio
 
 
 class AdeptHarass(MissionPrototype):
+    unitType: [UnitTypeId] = UnitTypeId.ADEPT
+    times: int = 2
+    AmountMin = 2
+    AmountMax = 4
+
     def __init__(self, bot: BotAI, id: str):
         super().__init__(bot, id)
 
-    async def Do(self):
-        print("Do: AdeptHarass")
+        self.startCondition = "once only, we have 2 adept"
+
+        self.endCondition = "anyDie, meet non light force"
+
+        self.doDesc = "sneakily kill appropriate units, prefer workers"
+
+        self.negativeDesc = (
+            "strong enemy anti-self forces (especially high mobility units)"
+        )
+
+        self.positionDesc = "weak enemy anti-self forces (especially near enemy bases)"

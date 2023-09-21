@@ -16,15 +16,21 @@ import asyncio
 
 
 class OracleHarass(MissionPrototype):
-    uid: UnitTypeId = UnitTypeId.ORACLE
+    # 15 (+7 vs Light)  DPS:24.4 Cooldown:0.61
+    unitType: [UnitTypeId] = UnitTypeId.ORACLE
     times: int = 2
     AmountMin = 1
     AmountMax = 3
     energyMinStartMission = 30
     energyMinStartAttack = 34
+    hitThreshold = 3
 
     def __init__(self, bot: BotAI, id: str):
         super().__init__(bot, id)
-
-    async def Do(self):
-        print("Do: OracleHarass")
+        self.startCondition = "2 times only, we have 1 oracle"
+        self.endCondition = "anyDie, meet strong enemy anti-air forces near enemy bases"
+        self.doDesc = "sneakily kill appropriate units, prefer workers"
+        self.negativeDesc = (
+            "strong enemy anti-self forces (especially high mobility units)"
+        )
+        self.positiveDesc = "weak enemy anti-self forces (especially near enemy bases)"

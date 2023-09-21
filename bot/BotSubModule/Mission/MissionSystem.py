@@ -13,6 +13,7 @@ from sc2.ids.buff_id import BuffId
 import asyncio
 
 from bot.BotSubModule.Mission.MissionInstance import MissionInstance
+from bot.BotSubModule.Mission.MissionInstance import MissionState
 from bot.BotSubModule.bot_mainStrategy import bot_mainStrategy
 from bot.BotSubModule.bot_tactics import bot_tactics
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
@@ -75,11 +76,19 @@ class MissionSystem:
         # currentMissions: [MissionInstance]
         # unitsAssignedMission: Set[int]  # 记录unit的tag的临时表
         for m in self.pendingMissions:
-            toStart = m.CheckToStart()
-        for m in self.currentMissions:
-            m.Do()
-            # check start not start missions, delete useless missions
-            # add running missions to
+            toStart = m.CheckStart()
+            if toStart:
+                self.AddCurrent(m.id)
+
+        crtMissions = sorted(
+            self.currentMissions,
+            key=lambda e: e.proto.layer,
+            reverse=True,
+        )
+
+        for m in crtMissions:
+            print(m)
+            # m.Do()
         return
         await self.tactics.ScoutWithOb()
         # await self.tactics.OracleRush()
@@ -88,9 +97,11 @@ class MissionSystem:
         await self.tactics.Micro()
 
     async def DoIter3(self):
+        return
         await self.mainStrategy.Rush()
 
     async def DoIter10(self):
+        return
         await self.mainStrategy.Rally()
 
     def AddCurrent(self, id: str):
@@ -103,7 +114,7 @@ class MissionSystem:
             return
         proto = self.GetPrototype(id)
         self.pendingMissions.add(MissionInstance(self.bot, proto))
-        print("add pending mission " + id)
+        print("add pending mission " + proto.id)
 
     def GetCurrents(self, id: str) -> [MissionInstance]:
         return [i for i, x in enumerate(self.currentMissions) if x.id == id]

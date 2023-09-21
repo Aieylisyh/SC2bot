@@ -18,7 +18,3 @@ import asyncio
 class BasicArmy(MissionPrototype):
     def __init__(self, bot: BotAI, id: str):
         super().__init__(bot, id)
-        self.id = "BasicArmy"
-
-    async def Do(self):
-        print("Do: BasicArmy")

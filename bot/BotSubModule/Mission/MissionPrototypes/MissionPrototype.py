@@ -16,14 +16,20 @@ import asyncio
 class MissionPrototype:
     # See StrategyDesignData for more information
     id: str
-    unitTypes: [UnitTypeId]
     layer: int
     # a unit can have multi missions at the same time, mission of larger layer will be execute
     piority: int
     # if there are multi missions of the same layer, larger piority mission will overwrite smaller one
     units: Units
-    startWeightFactor: float = 1
-    endWeightFactor: float = 1
+
+    negativeOverallFactor: float = 1
+    positiveOverallFactor: float = 1
+
+    startCondition: str = ""
+    endCondition: str = ""
+    goalDesc: str = ""
+    negativeDesc: str = ""  # may do more this mission
+    positiveDesc: str = ""  # may do no more this mission
 
     def __init__(self, bot: BotAI, id: str):
         self.bot = bot

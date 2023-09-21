@@ -18,6 +18,3 @@ import asyncio
 class ObserverScout(MissionPrototype):
     def __init__(self, bot: BotAI, id: str):
         super().__init__(bot, id)
-
-    async def Do(self):
-        print("Do: ObserverScout")
