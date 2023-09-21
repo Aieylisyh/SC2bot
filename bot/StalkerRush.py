@@ -12,12 +12,10 @@ from sc2 import maps
 
 from bot.BotSubModule.bot_buildStructure import bot_buildStructure
 from bot.BotSubModule.bot_economy import bot_economy
-from bot.BotSubModule.bot_mainStrategy import bot_mainStrategy
-from bot.BotSubModule.bot_tactics import bot_tactics
-from bot.BotSubModule.bot_unitSelection import bot_unitSelection
 from bot.BotSubModule.bot_trainArmy import bot_trainArmy
 from bot.BotSubModule.bot_nexusSkill import bot_nexusSkill
 from bot.BotSubModule.bot_tech import bot_tech
+from bot.BotSubModule.Mission.MissionSystem import MissionSystem
 
 # learn source：https://brax.gg/python-sc2-advanced-bot/
 
@@ -29,12 +27,10 @@ class StalkerRushBot(BotAI):
     iter3: int = 0
     iter10: int = 0
 
+    mission: MissionSystem
     buildStructure: bot_buildStructure
     economy: bot_economy
-    mainStrategy: bot_mainStrategy
-    tactics: bot_tactics
     tech: bot_tech
-    unitSelection: bot_unitSelection
     trainArmy: bot_trainArmy
     nexusSkill: bot_nexusSkill
 
@@ -45,23 +41,24 @@ class StalkerRushBot(BotAI):
 
     async def DoIter10(self):
         self.iter10 += 1
+        await self.mission.DoIter10()
 
     async def DoIter3(self):
         self.iter3 += 1
         await self.economy.BuildAssimilators()
         await self.economy.DistributeWorkers()
-        await self.mainStrategy.Rally()
-        await self.mainStrategy.Rush()
+        await self.mission.DoIter3()
 
     async def on_start(self):
+        self.mission = MissionSystem(self)
+
         self.buildStructure = bot_buildStructure(self)
         self.economy = bot_economy(self)
-        self.unitSelection = bot_unitSelection(self)
-        self.tactics = bot_tactics(self)
         self.tech = bot_tech(self)
         self.trainArmy = bot_trainArmy(self)
         self.nexusSkill = bot_nexusSkill(self)
-        self.mainStrategy = bot_mainStrategy(self)
+
+        await self.mission.Init()
         await self.economy.StartGameAllocateWorkers()
 
     async def on_end(self, result):
@@ -70,7 +67,12 @@ class StalkerRushBot(BotAI):
 
     async def on_step(self, iteration):
         if not self.townhalls.ready:
-            self.mainStrategy.AttackWithAllForces(True)
+            t = self.enemy_start_locations[0]
+            for unit in self.units.ready:
+                if unit.can_attack:
+                    unit.attack(t)
+                else:
+                    unit.move(t)
             return
 
         if iteration == 0:
@@ -83,11 +85,7 @@ class StalkerRushBot(BotAI):
         await self.trainArmy.train()
         await self.economy.Expand()
         await self.nexusSkill.ChronoBoost()
-        await self.tactics.ScoutWithOb()
-        await self.tactics.OracleRush()
-        await self.tactics.CancelAttackedBuildings()
-        await self.mainStrategy.BattleMacro()
-        await self.tactics.Micro()
+        await self.mission.DoIter1()
 
         if iteration % 10 == 9:
             await self.DoIter10()

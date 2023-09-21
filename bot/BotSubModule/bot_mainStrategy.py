@@ -27,9 +27,11 @@ class bot_mainStrategy:
 
     def __init__(self, bot: BotAI):
         self.bot = bot
-        self.unitSelection = bot.unitSelection
-        self.tactics = bot.tactics
-        self.buildStructure = bot.buildStructure
+
+    def Init(self):
+        self.unitSelection = self.bot.mission.unitSelection
+        self.tactics = self.bot.mission.tactics
+        self.buildStructure = self.bot.buildStructure
 
     def GetLaunchAttackUnitSupplyCap(self):
         bot = self.bot
@@ -60,6 +62,7 @@ class bot_mainStrategy:
                 if f.can_attack:
                     f.attack(targetPos)
             print("startingGame_rusherRushed")
+            await bot.chat_send("early harass")
             bot.startingGame_rusherRushed = True
 
     async def clear_map(self):

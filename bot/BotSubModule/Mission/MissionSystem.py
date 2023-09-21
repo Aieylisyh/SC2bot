@@ -12,7 +12,10 @@ from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
 import asyncio
 from bot.BotSubModule.Mission.MissionPrototypes.MissionPrototype import MissionPrototype
-from Mission.MissionInstance import MissionInstance
+from bot.BotSubModule.Mission.MissionInstance import MissionInstance
+from bot.BotSubModule.bot_mainStrategy import bot_mainStrategy
+from bot.BotSubModule.bot_tactics import bot_tactics
+from bot.BotSubModule.bot_unitSelection import bot_unitSelection
 
 
 class MissionSystem:
@@ -29,8 +32,30 @@ class MissionSystem:
     defaultMissions_ZvT: Set[MissionInstance]
     defaultMissions_ZvZ: Set[MissionInstance]
 
+    mainStrategy: bot_mainStrategy
+    tactics: bot_tactics
+    unitSelection: bot_unitSelection
+
     def __init__(self, bot: BotAI):
         self.bot = bot
+        self.unitSelection = bot_unitSelection(bot)
+        self.tactics = bot_tactics(bot)
+        self.mainStrategy = bot_mainStrategy(bot)
 
-    async def Execute(self):
+    async def Init(self):
+        self.tactics.Init()
+        self.mainStrategy.Init()
+
+    async def DoIter1(self):
+        await self.tactics.ScoutWithOb()
+        # await self.tactics.OracleRush()
+        await self.tactics.CancelAttackedBuildings()
+        await self.mainStrategy.BattleMacro()
+        await self.tactics.Micro()
         return False
+
+    async def DoIter3(self):
+        await self.mainStrategy.Rush()
+
+    async def DoIter10(self):
+        await self.mainStrategy.Rally()

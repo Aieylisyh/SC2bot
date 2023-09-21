@@ -13,7 +13,7 @@ from sc2 import maps
 from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
-from Mission.MissionInstance import bot_mission
+from bot.BotSubModule.Mission.MissionInstance import MissionInstance
 import asyncio
 
 
@@ -25,11 +25,12 @@ class bot_tactics:
 
     def __init__(self, bot: BotAI):
         self.bot = bot
+
+    def Init(self):
         self.scouts_and_spots = {}
         self.scoutTargetIndex = 0
         self.ordered_expansions = None
-        self.unitSelection = bot.unitSelection
-        self
+        self.unitSelection = self.bot.mission.unitSelection
 
     # Cancel building on attack
     async def CancelAttackedBuildings(self):
@@ -150,6 +151,7 @@ class bot_tactics:
             print("assign missions")
             ms = bot_mission(bot)
             ms.id = "oracle_harass"
+            await bot.chat_send("oracle harass")
             # oracle.mission = ms
             setattr(oracle, "mission", ms)
             print(oracle.mission.id)
