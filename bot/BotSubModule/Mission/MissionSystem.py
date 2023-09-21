@@ -18,8 +18,8 @@ from bot.BotSubModule.bot_tactics import bot_tactics
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
 
 from bot.BotSubModule.Mission.MissionPrototypes.MissionPrototype import MissionPrototype
-from Mission.MissionPrototypes.AdeptHarass import AdeptHarass
-from Mission.MissionPrototypes.OracleHarass import OracleHarass
+from bot.BotSubModule.Mission.MissionPrototypes.AdeptHarass import AdeptHarass
+from bot.BotSubModule.Mission.MissionPrototypes.OracleHarass import OracleHarass
 from bot.BotSubModule.Mission.MissionPrototypes.VoidrayBasic import VoidrayBasic
 from bot.BotSubModule.Mission.MissionPrototypes.BasicArmy import BasicArmy
 from bot.BotSubModule.Mission.MissionPrototypes.ObserverScout import ObserverScout
@@ -55,9 +55,13 @@ class MissionSystem:
 
     def __init__(self, bot: BotAI):
         self.bot = bot
+
         self.unitSelection = bot_unitSelection(bot)
         self.tactics = bot_tactics(bot)
         self.mainStrategy = bot_mainStrategy(bot)
+
+        self.pendingMissions = set()
+        self.currentMissions = []
 
     async def Init(self):
         self.tactics.Init()
@@ -70,8 +74,9 @@ class MissionSystem:
         # pendingMissions: Set[MissionInstance]
         # currentMissions: [MissionInstance]
         # unitsAssignedMission: Set[int]  # 记录unit的tag的临时表
-
-        for m in self.crtMissions:
+        for m in self.pendingMissions:
+            toStart = m.CheckToStart()
+        for m in self.currentMissions:
             m.Do()
             # check start not start missions, delete useless missions
             # add running missions to
@@ -89,15 +94,16 @@ class MissionSystem:
         await self.mainStrategy.Rally()
 
     def AddCurrent(self, id: str):
-        proto = MissionSystem.GetPrototype(id)
+        proto = self.GetPrototype(id)
         self.currentMissions += MissionInstance(self.bot, proto)
         print("add crt mission " + id)
 
     def AddPending(self, id: str):
         if self.GetPending(id):
             return
-        proto = MissionSystem.GetPrototype(id)
+        proto = self.GetPrototype(id)
         self.pendingMissions.add(MissionInstance(self.bot, proto))
+        print("add pending mission " + id)
 
     def GetCurrents(self, id: str) -> [MissionInstance]:
         return [i for i, x in enumerate(self.currentMissions) if x.id == id]
@@ -108,7 +114,18 @@ class MissionSystem:
                 return m
         return None
 
-    def GetPrototype(id: str) -> MissionPrototype:
+    def GetPrototype(self, id: str) -> MissionPrototype:
+        if id == "AdeptHarass":
+            return AdeptHarass(self.bot, id)
+        elif id == "OracleHarass":
+            return OracleHarass(self.bot, id)
+        elif id == "ObserverScout":
+            return ObserverScout(self.bot, id)
+        elif id == "VoidrayBasic":
+            return VoidrayBasic(self.bot, id)
+        return BasicArmy(self.bot, "BasicArmy")
+
+    def GetPrototypeClass(id: str) -> MissionPrototype:
         if id == "AdeptHarass":
             return AdeptHarass
         elif id == "OracleHarass":
@@ -118,3 +135,9 @@ class MissionSystem:
         elif id == "VoidrayBasic":
             return VoidrayBasic
         return BasicArmy
+
+    def HasUnits(self, unitID: UnitTypeId, amount: int):
+        bot = self.bot
+        bot.units(UnitTypeId.ORACLE).ready.amount
+        self.unitSelection.GetUnits()
+        return False

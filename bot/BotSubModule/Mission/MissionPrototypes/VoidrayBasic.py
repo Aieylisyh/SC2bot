@@ -16,8 +16,8 @@ import asyncio
 
 
 class VoidrayBasic(MissionPrototype):
-    def __init__(self, bot: BotAI):
-        self.bot = bot
+    def __init__(self, bot: BotAI, id: str):
+        super().__init__(bot, id)
 
     async def Do(self):
         print("Do: VoidrayBasic")

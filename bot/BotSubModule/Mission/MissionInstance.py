@@ -18,7 +18,6 @@ class MissionInstance:
     finished: bool
     started: bool
     id: str
-    id: str
     proto: MissionPrototype
 
     targetUnit: Unit
@@ -36,8 +35,8 @@ class MissionInstance:
         self.proto = mp
         self.Initialize()
 
-    def CheckToStart(self) -> bool:
-        return False
+    def CheckStart(self) -> bool:
+        return self.proto.CheckStart()
 
     def CheckFinish(self) -> bool:
         return False
@@ -47,4 +46,4 @@ class MissionInstance:
 
     def Initialize(self):
         self.id = self.proto.id
-        print("mission instance " + str(self.proto))
+        # print("mission instance " + str(self.proto))

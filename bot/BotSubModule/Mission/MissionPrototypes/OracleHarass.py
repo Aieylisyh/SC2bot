@@ -16,8 +16,15 @@ import asyncio
 
 
 class OracleHarass(MissionPrototype):
-    def __init__(self, bot: BotAI):
-        self.bot = bot
+    uid: UnitTypeId = UnitTypeId.ORACLE
+    times: int = 2
+    AmountMin = 1
+    AmountMax = 3
+    energyMinStartMission = 30
+    energyMinStartAttack = 34
+
+    def __init__(self, bot: BotAI, id: str):
+        super().__init__(bot, id)
 
     async def Do(self):
         print("Do: OracleHarass")
