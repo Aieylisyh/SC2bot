@@ -44,27 +44,6 @@ class bot_mainStrategy:
             + bot.supply_left * 0.8
         )
 
-    async def Rush(self):
-        bot = self.bot
-        if bot.startingGame_rusherRushed:
-            return
-        myForces = self.unitSelection.GetUnits(False).ready
-        if myForces.amount >= 2:
-            targetPos = bot.enemy_start_locations[0].position
-            for f in myForces:
-                abilities = await self.bot.get_available_abilities(f)
-                if AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities:
-                    f(
-                        AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT,
-                        target=targetPos,
-                        queue=False,
-                    )
-                if f.can_attack:
-                    f.attack(targetPos)
-            print("startingGame_rusherRushed")
-            await bot.chat_send("early harass")
-            bot.startingGame_rusherRushed = True
-
     async def clear_map(self):
         bot = self.bot
 

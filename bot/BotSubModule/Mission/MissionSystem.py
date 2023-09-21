@@ -113,6 +113,7 @@ class MissionSystem:
         proto = self.GetPrototype(id)
         m = MissionInstance(self.bot, proto)
         m.state = MissionState.Doing
+        m.iter = 0
         self.currentMissions += [m]
         print("add crt mission " + proto.id)
 
@@ -122,6 +123,7 @@ class MissionSystem:
         proto = self.GetPrototype(id)
         m = MissionInstance(self.bot, proto)
         m.state = MissionState.Pending
+        m.iter = 0
         self.pendingMissions.add(m)
         print("add pending mission " + proto.id)
 

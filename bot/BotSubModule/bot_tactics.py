@@ -376,8 +376,10 @@ class bot_tactics:
                     if armoredCount * 2 >= enes.amount:
                         u(AbilityId.EFFECT_VOIDRAYPRISMATICALIGNMENT)
 
-    async def Retreat(self, u: Unit, home_location):
-        u.move(home_location)
+    async def Retreat(self, u: Unit, safePos):
+        if not safePos:
+            safePos = self.bot.start_location
+        u.move(safePos)
 
     async def Micro(self):
         bot = self.bot

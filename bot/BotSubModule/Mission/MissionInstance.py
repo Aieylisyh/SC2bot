@@ -32,13 +32,28 @@ class MissionState(enum.Enum):
         return f"MissionState.{self.name}"
 
 
+class Progontanist:
+    p: Unit
+    log: str = ""  # temp log for any thing that want to save
+    targetPos: Point2
+    targetUnit: Unit
+    targetUnits: Units
+
+    # targetDuration: float
+    # targetAmount: int
+    # startIteraction: int
+
+    def __init__(self, p: Unit):
+        self.p = p
+
+
 class MissionInstance:
     state: MissionState = MissionState.Null
     id: str = ""
     proto: MissionPrototype
     layer: int
     piority: int = 1
-
+    progontanists: [Progontanist]
     # triggers if score>100
     # if this is in pending list, this decide whether to start this
     # if this is in current list, this decide whether to pending another mission of this kind
@@ -48,15 +63,14 @@ class MissionInstance:
     # if this is in current list, this decide whether to end this
     negativeScore: int = 0
 
-    # targetUnit: Unit
-    # targetPosition: Point2
-    # targetUnits: Units
-    # targetDuration: float
-    # targetAmount: int
-    # startIteraction: int
+    targetPosition: Point2
+
     mainStrategy: bot_mainStrategy
     tactics: bot_tactics
     unitSelection: bot_unitSelection
+    iter: int
+    result: str = ""  # TODO fail very suc...
+    log: str = ""  # temp log for any thing that want to save
 
     def __init__(self, bot: BotAI, mp: MissionPrototype):
         self.bot = bot
@@ -68,18 +82,23 @@ class MissionInstance:
         self.unitSelection = bot_unitSelection(self.bot)
         self.tactics = bot_tactics(self.bot)
         self.mainStrategy = bot_mainStrategy(self.bot)
+        self.progontanists = []
         # print("mission instance " + str(self.proto))
 
     async def CheckState(self) -> MissionState:
         if self.state == MissionState.Pending:
             self.CheckStartMission()
-        if self.state == MissionState.Doing:
+        elif self.state == MissionState.Doing:
             await self.Do()
             self.CheckEndMission()
             self.CheckAppendMission()
+        elif self.state == MissionState.Done:
+            a = 1
+            # TODO recycle
         return self.state
 
     async def Do(self):
+        self.iter += 1
         if self.proto.goalDesc == "sneakily kill appropriate units, prefer workers":
             await self.AdeptRush()
 
@@ -102,23 +121,80 @@ class MissionInstance:
 
     async def AdeptRush(self):
         bot = self.bot
-        if bot.startingGame_rusherRushed:
-            return
-        myForces = self.unitSelection.GetUnits(False).ready
-        myForces = myForces.filter(lambda unit: unit.type_id == UnitTypeId.ADEPT)
+        if self.log == "":
+            myForces = self.unitSelection.GetUnits(False).ready
+            adepts = myForces.filter(lambda unit: unit.type_id == UnitTypeId.ADEPT)
+            for adept in adepts:
+                p: Progontanist = Progontanist(adept)
+                p.log = "go"
+                self.progontanists += [p]
 
-        targetPos = bot.enemy_start_locations[0].position
+            self.targetPosition = bot.enemy_start_locations[0].position
 
-        for f in myForces:
-            abilities = await self.bot.get_available_abilities(f)
-            if AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities:
-                f(
-                    AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT,
-                    target=targetPos,
-                    queue=False,
+            for p in self.progontanists:
+                adept: Unit = p.p
+                abilities = await self.bot.get_available_abilities(f)
+                if AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities:
+                    adept(
+                        AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT,
+                        target=self.targetPosition,
+                        queue=False,
+                    )
+                adept.attack(self.targetPosition)
+            print("AdeptRush!")
+            await bot.chat_send("AdeptRush!")
+            self.log = "doing"
+
+        elif self.log == "doing":
+            enes: Units = self.unitSelection.GetUnits(True).ready
+            enes = self.unitSelection.UnitsInRangeOfUnit()
+
+            ########################## helper ################################
+            e: Unit = enes.first
+            e in enes
+            workers = enes.filter(
+                lambda unit: unit.type_id
+                in {UnitTypeId.PROBE, UnitTypeId.SCV, UnitTypeId.DRONE}
+            )
+            ########################## helper ################################
+
+            weakEnes = enes.filter(
+                lambda unit: unit.is_light and (unit.shield + unit.health) < 60
+            )
+            Threats = enes.filter(
+                lambda unit: unit.can_attack_ground and (not unit in weakEnes)
+            )
+
+            for progontanist in self.progontanists:
+                p: Progontanist = progontanist
+                adept = p.p
+                insight_threats = self.unitSelection.UnitsInRangeOfUnit(
+                    adept, Threats, 14
                 )
-            if f.can_attack:
-                f.attack(targetPos)
-        print("AdeptRush!")
-        await bot.chat_send("AdeptRush!")
-        bot.startingGame_rusherRushed = True
+                threat = 0
+                for threatEne in insight_threats:
+                    ThreatRange = max(6, threatEne.ground_range)
+                    dist = bot.distance_math_hypot(threatEne, adept)
+                    outOfThreatDist = dist - ThreatRange
+                    dps = threatEne.calculate_dps_vs_target(
+                        adept, include_overkill_damage=False
+                    )
+                    threatAttackMeTime = 0
+                    if outOfThreatDist > 0:
+                        threatAttackMeTime = outOfThreatDist / threatEne.movement_speed
+                    if threatAttackMeTime <= 0.5:
+                        threat += dps
+                    elif threatAttackMeTime <= 2:
+                        threat += dps * 0.6
+                    elif threatAttackMeTime <= 4:
+                        threat += dps * 0.3
+                    else:
+                        threat += dps * 0.1
+                if threat >= 10:
+                    # dangerous
+                    self.tactics.Retreat(adept, None)
+                    self.log = "retreat"
+
+                insight_targets = self.unitSelection.UnitsInRangeOfUnit(
+                    adept, weakEnes, 9.5
+                )

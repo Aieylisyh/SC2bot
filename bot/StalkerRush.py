@@ -35,7 +35,6 @@ class StalkerRushBot(BotAI):
     nexusSkill: bot_nexusSkill
 
     startingGame_rusherBuilt: int = 0
-    startingGame_rusherRushed: bool = False
     midEarlyGame_oracleBuilt: int = 0
     midEarlyGame_oracleRushed: bool = False
 

@@ -79,11 +79,7 @@ class bot_economy:
         if probeCount >= n + 1 and bot.structures(UnitTypeId.GATEWAY).amount > 0.5:
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 1)
-        if (
-            probeCount >= n + 3
-            and bot.structures(UnitTypeId.NEXUS).amount > 1
-            and bot.startingGame_rusherRushed
-        ):
+        if probeCount >= n + 3 and bot.structures(UnitTypeId.NEXUS).amount > 1:
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 2)
 

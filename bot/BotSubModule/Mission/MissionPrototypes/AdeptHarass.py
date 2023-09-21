@@ -14,6 +14,13 @@ from bot.BotSubModule.Mission.MissionPrototypes.MissionPrototype import MissionP
 from bot.BotSubModule.Mission.MissionInstance import MissionInstance
 import asyncio
 
+# Damage:10 (+1)
+# DPS:6.2 (+0.62)
+# 9 (+0.9) Resonating Glaives
+# Cooldown:1.61 (-0.5)
+# Bonus:+12 (+1) vs Light
+# Range:4
+
 
 class AdeptHarass(MissionPrototype):
     unitType: [UnitTypeId] = UnitTypeId.ADEPT
