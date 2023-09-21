@@ -75,21 +75,22 @@ class MissionSystem:
         # pendingMissions: Set[MissionInstance]
         # currentMissions: [MissionInstance]
         # unitsAssignedMission: Set[int]  # 记录unit的tag的临时表
-        for m in self.pendingMissions:
-            state = m.CheckState()
+
+        # to avoid RuntimeError: Set changed size during iteration
+        for m in self.pendingMissions.copy():
+            state = await m.CheckState()
             if state == MissionState.Doing:
                 self.AddCurrent(m.id)
                 self.pendingMissions.remove(m)
 
-        crtMissions = sorted(
+        crtMs: list[MissionInstance] = sorted(
             self.currentMissions,
             key=lambda e: e.proto.layer,
             reverse=True,
         )
 
-        for m in crtMissions:
-            state = m.CheckState()
-            print(m)
+        for m in crtMs:
+            state = await m.CheckState()
             if state == MissionState.Done:
                 self.currentMissions.remove(m)
             # m.Do()
@@ -112,7 +113,7 @@ class MissionSystem:
         proto = self.GetPrototype(id)
         m = MissionInstance(self.bot, proto)
         m.state = MissionState.Doing
-        self.currentMissions += m
+        self.currentMissions += [m]
         print("add crt mission " + proto.id)
 
     def AddPending(self, id: str):

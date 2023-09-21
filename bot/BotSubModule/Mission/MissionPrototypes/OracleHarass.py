@@ -29,7 +29,7 @@ class OracleHarass(MissionPrototype):
         super().__init__(bot, id)
         self.startCondition = "2 times only, we have 1 oracle"
         self.endCondition = "anyDie, meet strong enemy anti-air forces near enemy bases"
-        self.doDesc = "sneakily kill appropriate units, prefer workers"
+        self.goalDesc = "sneakily kill appropriate units, prefer workers"
         self.negativeDesc = (
             "strong enemy anti-self forces (especially high mobility units)"
         )

@@ -28,7 +28,7 @@ class AdeptHarass(MissionPrototype):
 
         self.endCondition = "anyDie, meet non light force"
 
-        self.doDesc = "sneakily kill appropriate units, prefer workers"
+        self.goalDesc = "sneakily kill appropriate units, prefer workers"
 
         self.negativeDesc = (
             "strong enemy anti-self forces (especially high mobility units)"

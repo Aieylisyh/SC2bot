@@ -70,16 +70,17 @@ class MissionInstance:
         self.mainStrategy = bot_mainStrategy(self.bot)
         # print("mission instance " + str(self.proto))
 
-    def CheckState(self) -> MissionState:
+    async def CheckState(self) -> MissionState:
         if self.state == MissionState.Pending:
             self.CheckStartMission()
         if self.state == MissionState.Doing:
+            await self.Do()
             self.CheckEndMission()
             self.CheckAppendMission()
         return self.state
 
     async def Do(self):
-        if self.proto.doDesc == "sneakily kill appropriate units, prefer workers":
+        if self.proto.goalDesc == "sneakily kill appropriate units, prefer workers":
             await self.AdeptRush()
 
     def CheckStartMission(self):
@@ -92,10 +93,12 @@ class MissionInstance:
                 return
 
     def CheckAppendMission(self):
-        print("TODO")
+        a = 1
+        # print("TODO")
 
     def CheckEndMission(self):
-        print("TODO")
+        a = 1
+        # print("TODO")
 
     async def AdeptRush(self):
         bot = self.bot

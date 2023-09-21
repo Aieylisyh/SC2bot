@@ -16,9 +16,9 @@ import asyncio
 class MissionPrototype:
     # See StrategyDesignData for more information
     id: str
-    layer: int
+    layer: int = 1
     # a unit can have multi missions at the same time, mission of larger layer will be execute
-    piority: int
+    piority: int = 1
     # if there are multi missions of the same layer, larger piority mission will overwrite smaller one
     units: Units
 
