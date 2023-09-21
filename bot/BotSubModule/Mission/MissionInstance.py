@@ -18,7 +18,8 @@ class MissionInstance:
     finished: bool
     started: bool
     id: str
-    units: Units
+    id: str
+    proto: MissionPrototype
 
     targetUnit: Unit
     targetPosition: Point2
@@ -30,47 +31,20 @@ class MissionInstance:
     piority: int
     startIteraction: int
 
-    def __init__(self, bot: BotAI):
+    def __init__(self, bot: BotAI, mp: MissionPrototype):
         self.bot = bot
+        self.proto = mp
+        self.Initialize()
 
-    def TargetChecker(self) -> bool:
+    def CheckToStart(self) -> bool:
         return False
 
-    def DoMissionTasks(self) -> bool:
+    def CheckFinish(self) -> bool:
         return False
 
-    def Initialize(self, id: str):
-        self.started = False
-        self.finished = False
-        id = str
-        if self.id == "":
-            # dosomething
-            print(self.id)
-        elif self.id == "1":
-            # dosomething
-            print(self.id)
-        elif self.id == "2":
-            # dosomething
-            print(self.id)
-        elif self.id == "3":
-            # dosomething
-            print(self.id)
+    async def Do(self):
+        await self.proto.Do()
 
-    def CheckFinish(self):
-        if not self.started:
-            return False
-
-        if self.id == "":
-            # dosomething
-            print(self.id)
-        elif self.id == "1":
-            # dosomething
-            print(self.id)
-        elif self.id == "2":
-            # dosomething
-            print(self.id)
-        elif self.id == "3":
-            # dosomething
-            print(self.id)
-        else:
-            return False
+    def Initialize(self):
+        self.id = self.proto.id
+        print("mission instance " + str(self.proto))

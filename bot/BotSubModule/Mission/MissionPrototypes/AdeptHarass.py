@@ -10,22 +10,15 @@ from sc2.ids.ability_id import AbilityId
 from sc2 import maps
 from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
+from bot.BotSubModule.Mission.MissionPrototypes.MissionPrototype import MissionPrototype
+from bot.BotSubModule.Mission.MissionInstance import MissionInstance
 import asyncio
 
 
-class MissionPrototype:
-    id: str
-    unitTypes: [UnitTypeId]
-    layer: int
-    # a unit can have multi missions at the same time
-    # mission of larger layer will be execute
-    # See StrategyDesignData for more information
-    piority: int
-    # if there are multi missions of the same layer, larger piority mission will overwrite smaller one
-    # See StrategyDesignData for more information
-
+class AdeptHarass(MissionPrototype):
     def __init__(self, bot: BotAI):
         self.bot = bot
+        print("__init__: AdeptHarass")
 
     async def Do(self):
-        print("Do")
+        print("Do: AdeptHarass")

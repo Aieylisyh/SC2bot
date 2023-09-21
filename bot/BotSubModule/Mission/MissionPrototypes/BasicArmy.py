@@ -15,9 +15,10 @@ from bot.BotSubModule.Mission.MissionInstance import MissionInstance
 import asyncio
 
 
-class OracleHarassment(MissionPrototype):
+class BasicArmy(MissionPrototype):
     def __init__(self, bot: BotAI):
         self.bot = bot
+        self.id = "BasicArmy"
 
-    async def PerformMission(self):
-        print("PerformMission: OracleHarassment")
+    async def Do(self):
+        print("Do: BasicArmy")
