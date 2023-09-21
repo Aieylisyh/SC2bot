@@ -13,6 +13,7 @@ from sc2 import maps
 from sc2.bot_ai import BotAI
 from sc2.ids.buff_id import BuffId
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
+from Mission.MissionInstance import bot_mission
 import asyncio
 
 
@@ -42,8 +43,8 @@ class bot_tactics:
                 enes = self.unitSelection.GetInRangeUnits(
                     s, 8, self.unitSelection.GetUnits(True)
                 )
-                if enes.amount > 1:
-                    s(AbilityId.CANCEL, s)
+                if enes and enes.amount > 1:
+                    s(AbilityId.CANCEL)
 
     async def ScoutWithOb(self):
         # Method to send our obs scouting
@@ -123,6 +124,41 @@ class bot_tactics:
                 if self.scoutTargetIndex > maxIndex:
                     self.scoutTargetIndex = 0
                 ob.move(targetLocation)
+
+    async def OracleRush(self):
+        bot = self.bot
+        oracles = bot.units(UnitTypeId.ORACLE).ready
+        if not oracles or oracles.amount < 1:
+            return
+        for oracle in oracles:
+            m = getattr(oracle, "mission", None)
+            print(oracle.tag)
+            print(m)
+            # oracle.tag+=1 read only
+            # don't know why the mission attri is missing every iteration
+            if m is not None:
+                continue
+
+            enemiesUnits = self.unitSelection.GetUnits(True)
+            eneBuilding = bot.enemy_structures
+            enemies: Units = enemiesUnits + eneBuilding
+            eneTargets: Unit = self.unitSelection.GetUnits(True)
+            # good target:worker marine
+            # practise, download some to study
+            # TODO attack workers, move between ene bases, open weapon when more than 2 works in range and enemy>50
+            # close weapon if no works in range of 10 and energy>4
+            print("assign missions")
+            ms = bot_mission(bot)
+            ms.id = "oracle_harass"
+            # oracle.mission = ms
+            setattr(oracle, "mission", ms)
+            print(oracle.mission.id)
+            m = getattr(oracle, "mission", None)
+            print(m)
+            enemyThreatsClose: Units = enemiesUnits.filter(
+                lambda unit: unit.distance_to(oracle) > 8
+                and unit.distance_to(oracle) <= 12
+            )
 
     # Our method to micro and to blink
     async def StalkerEscape(
@@ -359,12 +395,15 @@ class bot_tactics:
                 continue
             # print(u)
             await self.UnitAbilityActive(u, enemies)
-            if u.weapon_cooldown >= 0.1:
+            if u.weapon_cooldown >= 0.01:
                 await self.MicroMoveUnit(u, home_location, enemies)
                 continue
-
-            attackableEnes = enemies.in_attack_range_of(u)
-            await self.TryAttackEnemies(u, attackableEnes)
+            try:
+                attackableEnes = enemies.in_attack_range_of(u)
+                await self.TryAttackEnemies(u, attackableEnes)
+            except ValueError as e:
+                print(e)
+                print(type(e))
             continue
             # u.calculate_damage_vs_target
             # Returns a tuple of: [potential damage against target, attack speed, attack range] : Tuple[float, float, float]:

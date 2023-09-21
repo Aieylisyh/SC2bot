@@ -82,7 +82,7 @@ class bot_economy:
         if (
             probeCount >= n + 3
             and bot.structures(UnitTypeId.NEXUS).amount > 1
-            and bot.startingGame_stalkersRushed
+            and bot.startingGame_rusherRushed
         ):
             # build 1 assimilator
             await self.BuildAssimilator(townhalls, 2)
@@ -323,7 +323,7 @@ class bot_economy:
         baseCount = self.buildStructure.GetBuildingCount(UnitTypeId.NEXUS)
         if baseCount >= 2 and bot.supply_used < 90:
             return
-        if bot.startingGame_stalkersBuilt < 2:
+        if bot.startingGame_rusherBuilt < 2:
             return
         if (
             baseCount < self.target_Base_Count

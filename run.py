@@ -1,5 +1,3 @@
-from bot import CompetitiveBot
-from bot import protoss_carrier
 from bot import StalkerRush
 
 import argparse
@@ -165,7 +163,7 @@ def run():
         # Local game
         print("Starting local game...")
         run_game(
-            sc2.maps.get("DragonScalesAIE"),
+            sc2.maps.get("Simple96"),
             # Simple64 128 96
             # AncientCisternAIE
             # GoldenauraAIE
@@ -183,11 +181,11 @@ def run():
                     # Race["Terran"],
                     # Difficulty[args.ComputerDifficulty])],
                     # "Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]
-                    Difficulty.CheatVision,
+                    Difficulty.Hard,
                 ),
             ],
             # realtime=args.Realtime,
-            realtime=True,
+            realtime=False,
             sc2_version=args.Sc2Version,
         )
 

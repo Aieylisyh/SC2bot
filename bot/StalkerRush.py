@@ -38,8 +38,10 @@ class StalkerRushBot(BotAI):
     trainArmy: bot_trainArmy
     nexusSkill: bot_nexusSkill
 
-    startingGame_stalkersBuilt: int = 0
-    startingGame_stalkersRushed: bool = False
+    startingGame_rusherBuilt: int = 0
+    startingGame_rusherRushed: bool = False
+    midEarlyGame_oracleBuilt: int = 0
+    midEarlyGame_oracleRushed: bool = False
 
     async def DoIter10(self):
         self.iter10 += 1
@@ -82,6 +84,7 @@ class StalkerRushBot(BotAI):
         await self.economy.Expand()
         await self.nexusSkill.ChronoBoost()
         await self.tactics.ScoutWithOb()
+        await self.tactics.OracleRush()
         await self.tactics.CancelAttackedBuildings()
         await self.mainStrategy.BattleMacro()
         await self.tactics.Micro()

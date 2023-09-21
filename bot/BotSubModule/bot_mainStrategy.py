@@ -44,16 +44,23 @@ class bot_mainStrategy:
 
     async def Rush(self):
         bot = self.bot
-        if bot.startingGame_stalkersRushed:
+        if bot.startingGame_rusherRushed:
             return
-        myForces = self.unitSelection.GetUnits(False)
+        myForces = self.unitSelection.GetUnits(False).ready
         if myForces.amount >= 2:
-            target = bot.enemy_start_locations[0].position
+            targetPos = bot.enemy_start_locations[0].position
             for f in myForces:
+                abilities = await self.bot.get_available_abilities(f)
+                if AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities:
+                    f(
+                        AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT,
+                        target=targetPos,
+                        queue=False,
+                    )
                 if f.can_attack:
-                    f.attack(target)
-            print("startingGame_stalkersRushed")
-            bot.startingGame_stalkersRushed = True
+                    f.attack(targetPos)
+            print("startingGame_rusherRushed")
+            bot.startingGame_rusherRushed = True
 
     async def clear_map(self):
         bot = self.bot
@@ -63,11 +70,17 @@ class bot_mainStrategy:
         forces = self.unitSelection.GetUnits(False, workers=includeWorkers, air=True)
         # TODO Bug that void Ray has no weapon!
         forces = self.unitSelection.FilterAttack(forces)
-        if bot.supply_used > 150:
-            ground_enemies = bot.enemy_units.filter(
-                lambda unit: not unit.is_flying
-                and unit.type_id not in {UnitTypeId.LARVA, UnitTypeId.EGG}
-            )
+        if bot.supply_used > 100:
+            ground_enemies = None
+            try:
+                ground_enemies = bot.enemy_units.filter(
+                    lambda unit: not unit.is_flying
+                    and unit.type_id not in {UnitTypeId.LARVA, UnitTypeId.EGG}
+                )
+            except ValueError as e:
+                print(e)
+                print(type(e))
+
             # we dont see anything so start to clear the map
             if not ground_enemies:
                 for unit in forces:

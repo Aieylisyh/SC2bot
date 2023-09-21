@@ -28,23 +28,26 @@ class bot_trainArmy:
         bot = self.bot
         townhallAmount = bot.townhalls.amount
         if (
-            bot.startingGame_stalkersBuilt < 2
+            bot.startingGame_rusherBuilt < 2
             and bot.structures(UnitTypeId.GATEWAY).ready
             and bot.structures(UnitTypeId.CYBERNETICSCORE).ready
         ):
             for bg in bot.structures(UnitTypeId.GATEWAY).ready:
-                if bg.is_idle and bot.can_afford(UnitTypeId.STALKER):
-                    bg.train(UnitTypeId.STALKER)
-                    bot.startingGame_stalkersBuilt += 1
+                if bg.is_idle and bot.can_afford(UnitTypeId.ADEPT):
+                    bg.train(UnitTypeId.ADEPT)
+                    bot.startingGame_rusherBuilt += 1
 
         # warp in BG units
-        if bot.structures(UnitTypeId.WARPGATE).ready.amount > 0:
+        if (
+            bot.structures(UnitTypeId.WARPGATE).ready.amount > 0
+            and bot.structures(UnitTypeId.PYLON).ready.amount > 0
+        ):
             if (
                 bot.already_pending_upgrade(UpgradeId.BLINKTECH) > 0
                 or bot.supply_used < 55
             ):
                 await self.warp_bg_units(
-                    bot.structures(UnitTypeId.PYLON).closest_to(
+                    bot.structures(UnitTypeId.PYLON).ready.closest_to(
                         bot.enemy_start_locations[0]
                     )
                 )
@@ -74,7 +77,11 @@ class bot_trainArmy:
         if bot.structures(UnitTypeId.STARGATE):
             mgRatio = self.mgRatio()
             for vs in bot.structures(UnitTypeId.STARGATE).ready.idle:
-                if (
+                if bot.midEarlyGame_oracleBuilt < 1:
+                    if bot.can_afford(UnitTypeId.ORACLE):
+                        vs.train(UnitTypeId.ORACLE)
+                        bot.midEarlyGame_oracleBuilt += 1
+                elif (
                     bot.can_afford(UnitTypeId.VOIDRAY)
                     and bot.units(UnitTypeId.VOIDRAY).amount < townhallAmount * 1 + 2
                 ):

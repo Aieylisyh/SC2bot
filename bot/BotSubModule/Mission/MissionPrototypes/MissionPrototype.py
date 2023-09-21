@@ -13,17 +13,19 @@ from sc2.ids.buff_id import BuffId
 import asyncio
 
 
-class bot_mission:
-    bot: BotAI
-    missionUnits: Units
-    missionId: str
-    missionTargets: Units
+class MissionPrototype:
+    id: str
+    unitTypes: [UnitTypeId]
+    layer: int
+    # a unit can have multi missions at the same time
+    # mission of larger layer will be execute
+    # See StrategyDesignData for more information
+    piority: int
+    # if there are multi missions of the same layer, larger piority mission will overwrite smaller one
+    # See StrategyDesignData for more information
 
     def __init__(self, bot: BotAI):
         self.bot = bot
 
-    def missionTargetChecker(self) -> bool:
-        return False
-
-    def DoMissionTasks(self) -> bool:
-        return False
+    async def PerformMission(self):
+        print("PerformMission")

@@ -207,16 +207,6 @@ class bot_buildStructure:
             1,
             subId1=UnitTypeId.WARPGATE,
         )
-        # BY 1
-        await self.buildOne(
-            UnitTypeId.CYBERNETICSCORE,
-            1,
-            self.base1MainPylon,
-            16,
-            UnitTypeId.GATEWAY,
-            1,
-            subDependId1=UnitTypeId.WARPGATE,
-        )
         # BG 2
         await self.buildOne(
             UnitTypeId.GATEWAY,
@@ -228,26 +218,47 @@ class bot_buildStructure:
             subId1=UnitTypeId.WARPGATE,
             subDependId1=UnitTypeId.WARPGATE,
         )
-        # VC
+        # BY
         await self.buildOne(
-            UnitTypeId.TWILIGHTCOUNCIL,
+            UnitTypeId.CYBERNETICSCORE,
             1,
-            buildCenter,
-            20,
-            UnitTypeId.NEXUS,
-            1.1,
+            self.base1MainPylon,
+            16,
+            UnitTypeId.GATEWAY,
+            1,
+            subDependId1=UnitTypeId.WARPGATE,
         )
-        # BF
+        # VS
         await self.buildOne(
-            UnitTypeId.FORGE,
+            UnitTypeId.STARGATE,
             1,
-            buildCenter,
+            bot.structures(UnitTypeId.PYLON).ready.random,
             20,
-            UnitTypeId.TWILIGHTCOUNCIL,
-            0.3,
+            dependId=UnitTypeId.CYBERNETICSCORE,
+            dependProgress=1,
         )
+
+        if bot.townhalls.ready.amount >= 2:
+            # VC
+            await self.buildOne(
+                UnitTypeId.TWILIGHTCOUNCIL,
+                1,
+                buildCenter,
+                20,
+                UnitTypeId.STARGATE,
+                1,
+            )
+            # BF
+            await self.buildOne(
+                UnitTypeId.FORGE,
+                1,
+                buildCenter,
+                20,
+                UnitTypeId.TWILIGHTCOUNCIL,
+                0.4,
+            )
         # BG 3~4
-        if bot.supply_used > 99:
+        if bot.supply_used > 95:
             await self.buildOne(
                 UnitTypeId.GATEWAY,
                 self.target_BG_Count,
@@ -257,17 +268,7 @@ class bot_buildStructure:
                 dependProgress=1,
                 subId1=UnitTypeId.WARPGATE,
             )
-        elif bot.supply_used > 72:
-            # VS
-            await self.buildOne(
-                UnitTypeId.STARGATE,
-                1,
-                bot.structures(UnitTypeId.PYLON).ready.random,
-                20,
-                dependId=UnitTypeId.ROBOTICSFACILITY,
-                dependProgress=1,
-            )
-        elif bot.supply_used > 61:
+        elif bot.supply_used > 70:
             # VR
             await self.buildOne(
                 UnitTypeId.ROBOTICSFACILITY,
