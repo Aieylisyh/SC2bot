@@ -181,7 +181,7 @@ def run():
                     # Race["Terran"],
                     # Difficulty[args.ComputerDifficulty])],
                     # "Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]
-                    Difficulty.False,
+                    Difficulty.Hard,
                 ),
             ],
             # realtime=args.Realtime,

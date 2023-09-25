@@ -145,7 +145,7 @@ class MissionInstance:
                     continue
 
             for p in self.progontanists:
-                self.CheckSurrounding_Adept(p)
+                await self.CheckState_Adept(p)
 
             for p in self.progontanists.copy():
                 if not p.p:
@@ -157,7 +157,7 @@ class MissionInstance:
                 if self.log == "retreat":
                     self.progontanists.remove(p)
 
-    def CheckSurrounding_Adept(self, p: Progontanist):
+    async def CheckState_Adept(self, p: Progontanist):
         adept = p.p
         bot = self.bot
         enes: Units = self.unitSelection.GetUnits(True).ready
@@ -186,42 +186,67 @@ class MissionInstance:
 
         threat = 0
         for threatEne in threatsUnits:
-            ThreatRange = max(6, threatEne.ground_range)
+            ThreatRange = max(4, threatEne.ground_range)
             dist = bot.distance_math_hypot(threatEne.position, adept.position)
             outOfThreatDist = dist - ThreatRange
             dps = threatEne.calculate_dps_vs_target(
                 adept, include_overkill_damage=False
             )
-            threatAttackMeTime = 0
+            threatDelay = 0
             if outOfThreatDist > 0:
-                threatAttackMeTime = outOfThreatDist / threatEne.movement_speed
-            if threatAttackMeTime <= 0.5:
-                threat += dps
-            elif threatAttackMeTime <= 2:
-                threat += dps * 0.6
-            elif threatAttackMeTime <= 4:
-                threat += dps * 0.3
-            else:
-                threat += dps * 0.1
+                threatDelay = outOfThreatDist / threatEne.movement_speed
+            threatRatio = 0.1
+            if threatDelay <= 0.5:
+                threatRatio = 1.0
+            elif threatDelay <= 1:
+                threatRatio = 0.8
+            elif threatDelay <= 2:
+                threatRatio = 0.65
+            elif threatDelay <= 3:
+                threatRatio = 0.5
+            elif threatDelay <= 4:
+                threatRatio = 0.4
+            elif threatDelay <= 5:
+                threatRatio = 0.25
+
+            threat += dps * threatRatio
+            print(
+                "threatEne: "
+                + str(threatEne)
+                + "dps "
+                + str(dps)
+                + " t "
+                + str(dps * threatRatio)
+            )
         if threat > 0:
-            print("CheckSurrounding_Adept threat: " + str(threat))
+            print("CheckState_Adept threat: " + str(threat))
         if threat >= 10:
             # dangerous
-            p.log = "retreat"
+            abilities = await self.bot.get_available_abilities(adept)
+            if (
+                p.log == "go"
+                and not AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities
+            ):
+                await self.Run_Adept(p.p, self.homePosition, 50, False)
+                print("shade moving forward, ignore to retreat but evide")
+            else:
+                print(str(adept) + " to retreat")
+                p.log = "retreat"
             return
 
         insight_targets = self.unitSelection.UnitsInRangeOfUnit(adept, targetUnits, 9.5)
         if insight_targets:
+            print(str(adept) + " to attack")
             p.log = "attack"
             return
 
     async def Act_Adept(self, p: Progontanist):
         if p.log == "go":
-            await self.Run_Adept(p.p, self.targetPosition, 34, True)
+            await self.Run_Adept(p.p, self.targetPosition, 35, True)
         elif p.log == "attack":
             await self.Run_Adept(p.p, self.targetPosition, 18, False)
         elif p.log == "retreat":
-            await self.Run_Adept(p.p, self.homePosition, 34, False)
+            await self.Run_Adept(p.p, self.homePosition, 35, True)
 
     async def Run_Adept(
         self,
@@ -240,11 +265,13 @@ class MissionInstance:
                 )
 
         if attackBtwValue > 0:
-            info = self.tactics.GetGoodAttackInfo(adept, 0.4, onlyShots=3)
+            info = self.tactics.GetGoodAttackInfo(adept, 0.3, onlyShots=3)
             if info[0]:
-                print("Run_Adept attackBtw " + str(info[2]))
-                print(info[1])
+                print("info attackBtw " + str(info[2]))
                 if info[2] > attackBtwValue:
                     adept.attack(info[1])
+                    print(str(adept) + " attack " + str(info[1]))
+                    return
 
+        # print(str(adept) + " move")
         adept.move(targetPos)
