@@ -17,6 +17,7 @@ from bot.BotSubModule.bot_nexusSkill import bot_nexusSkill
 from bot.BotSubModule.bot_tech import bot_tech
 from bot.BotSubModule.Mission.MissionSystem import MissionSystem
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
+from bot.BotSubModule.bot_kite import bot_kite
 
 # learn source：https://brax.gg/python-sc2-advanced-bot/
 
@@ -35,10 +36,10 @@ class StalkerRushBot(BotAI):
     trainArmy: bot_trainArmy
     nexusSkill: bot_nexusSkill
     unitSelection: bot_unitSelection
+    kite: bot_kite
 
     startingGame_rusherBuilt: int = 0
     midEarlyGame_oracleBuilt: int = 0
-    midEarlyGame_oracleRushed: bool = False
 
     async def DoIter10(self):
         self.iter10 += 1
@@ -57,8 +58,18 @@ class StalkerRushBot(BotAI):
         self.trainArmy = bot_trainArmy(self)
         self.nexusSkill = bot_nexusSkill(self)
         self.unitSelection = bot_unitSelection(self)
+        self.kite = bot_kite(self)
         self.mission = MissionSystem(self)
+
+        await self.client.debug_minerals()
+        # add 5000 minerals to accelerate the test, comment this for really match
+        await self.client.debug_show_map()
+        # the best bot will guess what is in the unrevealed map,
+        # #this is in the future to implement, so now we unveal the map is to help the bot test to have the result closer to the optimal
+        # in the future we will just include the units of guess(imagination) into consideration
+
         await self.economy.StartGameAllocateWorkers()
+        # TODO add missions for faster mining trick
 
     async def on_end(self, result):
         print("Game ended.")
@@ -76,9 +87,10 @@ class StalkerRushBot(BotAI):
 
         if iteration == 0:
             await self.chat_send("(glhf)")
+
         # print("tick "+ str(iteration))
         await self.economy.TrainWorkers()
-        await self.tech.forge_research()
+        await self.tech.research()
         await self.buildStructure.build_productions()
         await self.buildStructure.BuildPylons()
         await self.trainArmy.train()

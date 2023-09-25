@@ -20,7 +20,7 @@ class bot_tech:
         self.bot = bot
 
     # method to research the upgrades at the forge
-    async def forge_research(self):
+    async def research(self):
         # Research warp gate if cybercore is completed
         if (
             self.bot.structures(UnitTypeId.CYBERNETICSCORE).ready
@@ -57,54 +57,47 @@ class bot_tech:
                     if loop_nexus.energy >= 50:
                         loop_nexus(AbilityId.EFFECT_CHRONOBOOSTENERGYCOST, forge)
                         break
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL1,
+                UpgradeId.PROTOSSGROUNDWEAPONSLEVEL1,
+            )
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSGROUNDARMORLEVEL1,
+                UpgradeId.PROTOSSGROUNDARMORSLEVEL1,
+            )
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSSHIELDSLEVEL1,
+                UpgradeId.PROTOSSSHIELDSLEVEL1,
+            )
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL2,
+                UpgradeId.PROTOSSGROUNDWEAPONSLEVEL2,
+            )
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSSHIELDSLEVEL2,
+                UpgradeId.PROTOSSSHIELDSLEVEL2,
+            )
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSGROUNDARMORLEVEL2,
+                UpgradeId.PROTOSSGROUNDARMORSLEVEL2,
+            )
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL3,
+                UpgradeId.PROTOSSGROUNDWEAPONSLEVEL3,
+            )
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSSHIELDSLEVEL3,
+                UpgradeId.PROTOSSSHIELDSLEVEL3,
+            )
+            await self.reseach_forge(
+                AbilityId.FORGERESEARCH_PROTOSSGROUNDARMORLEVEL3,
+                UpgradeId.PROTOSSGROUNDARMORSLEVEL3,
+            )
 
-            if (
-                self.bot.can_afford(AbilityId.FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL1)
-                and self.bot.already_pending_upgrade(
-                    UpgradeId.PROTOSSGROUNDWEAPONSLEVEL1
-                )
-                == 0
-                and forge.is_idle
-            ):
-                forge.research(UpgradeId.PROTOSSGROUNDWEAPONSLEVEL1)
-            elif (
-                self.bot.can_afford(AbilityId.FORGERESEARCH_PROTOSSGROUNDARMORLEVEL1)
-                and self.bot.already_pending_upgrade(
-                    UpgradeId.PROTOSSGROUNDARMORSLEVEL1
-                )
-                == 0
-                and forge.is_idle
-            ):
-                forge.research(UpgradeId.PROTOSSGROUNDARMORSLEVEL1)
-            elif (
-                self.bot.can_afford(AbilityId.FORGERESEARCH_PROTOSSSHIELDSLEVEL1)
-                and self.bot.already_pending_upgrade(UpgradeId.PROTOSSSHIELDSLEVEL1)
-                == 0
-                and forge.is_idle
-            ):
-                forge.research(UpgradeId.PROTOSSSHIELDSLEVEL1)
-            elif (
-                self.bot.can_afford(AbilityId.FORGERESEARCH_PROTOSSGROUNDWEAPONSLEVEL2)
-                and self.bot.already_pending_upgrade(
-                    UpgradeId.PROTOSSGROUNDWEAPONSLEVEL2
-                )
-                == 0
-                and forge.is_idle
-            ):
-                forge.research(UpgradeId.PROTOSSGROUNDWEAPONSLEVEL2)
-            elif (
-                self.bot.can_afford(AbilityId.FORGERESEARCH_PROTOSSGROUNDARMORLEVEL2)
-                and self.bot.already_pending_upgrade(
-                    UpgradeId.PROTOSSGROUNDARMORSLEVEL2
-                )
-                == 0
-                and forge.is_idle
-            ):
-                forge.research(UpgradeId.PROTOSSGROUNDARMORSLEVEL2)
-            elif (
-                self.bot.can_afford(AbilityId.FORGERESEARCH_PROTOSSSHIELDSLEVEL2)
-                and self.bot.already_pending_upgrade(UpgradeId.PROTOSSSHIELDSLEVEL2)
-                == 0
-                and forge.is_idle
-            ):
-                forge.research(UpgradeId.PROTOSSSHIELDSLEVEL2)
+    async def reseach_forge(self, ability: AbilityId, upgrade: UpgradeId) -> bool:
+        bot = self.bot
+        if bot.already_pending_upgrade(upgrade) > 0:
+            return
+        forge = self.bot.structures(UnitTypeId.FORGE).ready.random
+        if forge.is_idle and bot.can_afford(ability):
+            forge.research(upgrade)

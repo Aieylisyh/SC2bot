@@ -175,9 +175,9 @@ def run():
                 bot,
                 Computer(
                     # Race[args.ComputerRace],
-                    # Race["Protoss"],
+                    Race["Protoss"],
                     # Race["Zerg"],
-                    Race["Random"],
+                    # Race["Random"],
                     # Race["Terran"],
                     # Difficulty[args.ComputerDifficulty])],
                     # "Computer difficulty. One of [VeryEasy, Easy, Medium, MediumHard, Hard, Harder, VeryHard, CheatVision, CheatMoney, CheatInsane]

@@ -17,6 +17,7 @@ from bot.BotSubModule.Mission.MissionInstance import MissionState
 from bot.BotSubModule.bot_mainStrategy import bot_mainStrategy
 from bot.BotSubModule.bot_tactics import bot_tactics
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
+from bot.BotSubModule.bot_kite import bot_kite
 
 from bot.BotSubModule.Mission.MissionPrototypes.MissionPrototype import MissionPrototype
 from bot.BotSubModule.Mission.MissionPrototypes.AdeptHarass import AdeptHarass
@@ -53,11 +54,13 @@ class MissionSystem:
     mainStrategy: bot_mainStrategy
     tactics: bot_tactics
     unitSelection: bot_unitSelection
+    kite: bot_kite
 
     def __init__(self, bot: BotAI):
         self.bot = bot
 
         self.unitSelection = bot.unitSelection
+        self.kite = bot.kite
         self.tactics = bot_tactics(bot)
         self.mainStrategy = bot_mainStrategy(bot)
 

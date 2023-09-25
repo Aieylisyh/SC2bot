@@ -99,6 +99,19 @@ class MissionInstance:
 
     async def Do(self):
         self.iter += 1
+        # unit info is cached, if not update, some attri like position will not change
+        if self.progontanists:
+            for p in self.progontanists.copy():
+                if not p.p:
+                    self.progontanists.remove(p)
+                    continue
+                if p.p.is_memory:
+                    tag = p.p.tag
+                    p.p = self.bot.units.find_by_tag(tag)
+                    if not p.p:
+                        self.progontanists.remove(p)
+                        continue
+
         if self.proto.goalDesc == "sneakily kill appropriate units, prefer workers":
             await self.AdeptRush()
 
@@ -121,6 +134,7 @@ class MissionInstance:
 
     async def AdeptRush(self):
         bot = self.bot
+        # sent adepts out
         if self.log == "":
             myForces = self.unitSelection.GetUnits(False).ready
             adepts = myForces.filter(lambda unit: unit.type_id == UnitTypeId.ADEPT)
@@ -133,139 +147,153 @@ class MissionInstance:
             self.log = "doing"
             self.targetPosition = bot.enemy_start_locations[0].position
             print("AdeptRush!")
-            await bot.chat_send("AdeptRush!")
+            await bot.chat_send("Faith?")
 
+        # let adepts go and fight
         elif self.log == "doing":
             if len(self.progontanists) <= 0:
                 self.state = MissionState.Done
                 return
-            for p in self.progontanists.copy():
-                if not p.p:
-                    self.progontanists.remove(p)
-                    continue
+            self.RemoveInvalidProgontanists()
+            # await self.Act_shades()
+            await self.CheckState_Adepts()
 
-            for p in self.progontanists:
-                await self.CheckState_Adept(p)
+    def RemoveInvalidProgontanists(self):
+        for p in self.progontanists.copy():
+            if not p.p:
+                self.progontanists.remove(p)
+                continue
 
-            for p in self.progontanists.copy():
-                if not p.p:
-                    self.progontanists.remove(p)
-                    continue
+    async def Act_shades(self):
+        shades = self.bot.units(UnitTypeId.ADEPTPHASESHIFT).ready
+        if shades and shades.amount > 0:
+            for shade in shades:
+                await self.Act_Shade(shade)
 
-                await self.Act_Adept(p)
+    async def Act_Shade(self, shade: Unit):
+        print("Act_Shade " + str(shade))
 
-                if self.log == "retreat":
-                    self.progontanists.remove(p)
+    async def CheckState_Adepts(self):
+        for p in self.progontanists:
+            await self.CheckState_Adept(p)
+            await self.Act_Adept(p)
 
     async def CheckState_Adept(self, p: Progontanist):
         adept = p.p
         bot = self.bot
-        enes: Units = self.unitSelection.GetUnits(True).ready
-        enes = self.unitSelection.UnitsInRangeOfUnit(adept, enes, 14)
+        enes: Units = self.unitSelection.GetUnits(True, workers=True).ready
+        involvedEnes = self.unitSelection.UnitsInRangeOfUnit(adept, enes, 14)
 
-        if not enes:
+        if not involvedEnes:
             if p.log == "go":
                 return
             elif p.log == "attack":
                 p.log = "go"
                 return
-            elif p.log == "retreat":
-                return
+
+        if p.log == "retreat":
+            return
         ########################## helper ################################
-        e: Unit = enes.first
+        e: Unit = involvedEnes.first
         # e in enes
         # workers = enes.filter( lambda unit: unit.type_id  in {UnitTypeId.PROBE, UnitTypeId.SCV, UnitTypeId.DRONE}   )
         ########################## helper ################################
 
-        targetUnits = enes.filter(
+        preys = involvedEnes.filter(
             lambda unit: unit.is_light and (unit.shield + unit.health) < 60
         )
-        threatsUnits = enes.filter(
-            lambda unit: unit.can_attack_ground and (not unit in targetUnits)
+        threatEnes = involvedEnes.filter(
+            lambda unit: unit.can_attack_ground
+            # and (not unit.is_gathering and not unit.is_returning)
+            # and (not unit in {UnitTypeId.PROBE, UnitTypeId.SCV, UnitTypeId.DRONE})
         )
 
         threat = 0
-        for threatEne in threatsUnits:
-            ThreatRange = max(4, threatEne.ground_range)
-            dist = bot.distance_math_hypot(threatEne.position, adept.position)
-            outOfThreatDist = dist - ThreatRange
+        for threatEne in threatEnes:
             dps = threatEne.calculate_dps_vs_target(
                 adept, include_overkill_damage=False
             )
-            threatDelay = 0
-            if outOfThreatDist > 0:
-                threatDelay = outOfThreatDist / threatEne.movement_speed
-            threatRatio = 0.1
-            if threatDelay <= 0.5:
-                threatRatio = 1.0
-            elif threatDelay <= 1:
-                threatRatio = 0.8
-            elif threatDelay <= 2:
-                threatRatio = 0.65
-            elif threatDelay <= 3:
-                threatRatio = 0.5
-            elif threatDelay <= 4:
-                threatRatio = 0.4
-            elif threatDelay <= 5:
-                threatRatio = 0.25
-
-            threat += dps * threatRatio
-            print(
-                "threatEne: "
-                + str(threatEne)
-                + "dps "
-                + str(dps)
-                + " t "
-                + str(dps * threatRatio)
-            )
+            threat += dps * self.GetThreatRatioByDistance(adept, threatEne)
         if threat > 0:
-            print("CheckState_Adept threat: " + str(threat))
-        if threat >= 10:
-            # dangerous
-            abilities = await self.bot.get_available_abilities(adept)
-            if (
-                p.log == "go"
-                and not AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities
-            ):
-                await self.Run_Adept(p.p, self.homePosition, 50, False)
-                print("shade moving forward, ignore to retreat but evide")
-            else:
-                print(str(adept) + " to retreat")
-                p.log = "retreat"
-            return
+            # print("threat to Adept: " + str(threat))
+            if threat >= 15:
+                # dangerous
+                abilities = await self.bot.get_available_abilities(adept)
+                if (
+                    p.log == "go"
+                    and not AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities
+                ):
+                    await self.Run_Adept(p.p, self.homePosition, 50, False)
+                    # print("shade in cd, temp retreat")
+                    return
+                elif p.log == "attack":
+                    if threat >= 25:
+                        print(str(adept) + " attack to retreat")
+                        p.log = "retreat"
+                        return
+                else:
+                    print(str(adept) + " " + p.log + " to retreat")
+                    p.log = "retreat"
+                    return
 
-        insight_targets = self.unitSelection.UnitsInRangeOfUnit(adept, targetUnits, 9.5)
+        insight_targets = self.unitSelection.UnitsInRangeOfUnit(adept, preys, 10)
         if insight_targets:
             print(str(adept) + " to attack")
             p.log = "attack"
             return
 
+    def GetThreatRatioByDistance(self, u: Unit, threatEne: Unit):
+        bot = self.bot
+        threatRange = max(4, threatEne.ground_range)
+        dist = bot._distance_pos_to_pos(threatEne.position, u.position)
+        outOfThreatDist = dist - threatRange
+        threatDelay = 0
+        if outOfThreatDist > 0:
+            threatDelay = outOfThreatDist / threatEne.movement_speed
+        threatRatio = 0.1
+        if threatDelay <= 1:
+            threatRatio = 1.0
+        elif threatDelay <= 2:
+            threatRatio = 0.8
+        elif threatDelay <= 3:
+            threatRatio = 0.6
+        elif threatDelay <= 4:
+            threatRatio = 0.3
+        elif threatDelay <= 5:
+            threatRatio = 0.2
+        elif threatDelay <= 6:
+            threatRatio = 0.15
+        if threatEne.type_id in {
+            UnitTypeId.PROBE,
+            UnitTypeId.SCV,
+            UnitTypeId.DRONE,
+        }:
+            if dist > 1.8:
+                threatRatio = 0
+        return threatRatio
+
     async def Act_Adept(self, p: Progontanist):
         if p.log == "go":
-            await self.Run_Adept(p.p, self.targetPosition, 35, True)
+            await self.Run_Adept(p.p, self.targetPosition, 35, True, 0.35)
         elif p.log == "attack":
-            await self.Run_Adept(p.p, self.targetPosition, 18, False)
+            await self.Run_Adept(p.p, self.targetPosition, 18, False, 0.6)
         elif p.log == "retreat":
-            await self.Run_Adept(p.p, self.homePosition, 35, True)
+            await self.Run_Adept(p.p, self.homePosition, 35, True, 0.25)
+            if self.bot._distance_pos_to_pos(p.p.position, self.homePosition) < 25:
+                self.progontanists.remove(p)
 
     async def Run_Adept(
         self,
         adept: Unit,
         targetPos,
-        attackBtwValue: float = 0,  # 0 no attack,>25 is about attack good targets only
+        attackBtwValue: float = 0,  # 0 no attack, higher value is about attack good targets only（one shot or can deal higher damage）
         allow_PHASESHIFT: bool = True,
+        cdTreshold: float = 0.3,
     ):
         if allow_PHASESHIFT:
-            abilities = await self.bot.get_available_abilities(adept)
-            if AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities:
-                adept(
-                    AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT,
-                    target=self.targetPosition,
-                    queue=False,
-                )
-
+            await self.PhaseShiftAdept(adept, targetPos)
         if attackBtwValue > 0:
-            info = self.tactics.GetGoodAttackInfo(adept, 0.3, onlyShots=3)
+            info = self.tactics.GetGoodAttackInfo(adept, cdTreshold, onlyShots=3)
             if info[0]:
                 print("info attackBtw " + str(info[2]))
                 if info[2] > attackBtwValue:
@@ -275,3 +303,15 @@ class MissionInstance:
 
         # print(str(adept) + " move")
         adept.move(targetPos)
+
+    async def PhaseShiftAdept(self, adept: Unit, p: Point2):
+        abilities = await self.bot.get_available_abilities(adept)
+        if AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT in abilities:
+            adept(
+                AbilityId.ADEPTPHASESHIFT_ADEPTPHASESHIFT,
+                target=p,
+                queue=False,
+            )
+            print(
+                "use PHASESHIFT shade: " + str(adept.position) + " by " + str(adept.tag)
+            )
