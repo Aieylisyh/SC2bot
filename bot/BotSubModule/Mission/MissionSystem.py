@@ -60,8 +60,8 @@ class MissionSystem:
         self.bot = bot
 
         self.unitSelection = bot.unitSelection
-        self.kite = bot.kite
         self.tactics = bot_tactics(bot)
+        self.kite = bot_kite(bot, self.tactics)
         self.mainStrategy = bot_mainStrategy(bot)
 
         self.pendingMissions = set()
@@ -110,7 +110,7 @@ class MissionSystem:
 
     def AddCurrent(self, id: str):
         proto = self.GetPrototype(id)
-        m = MissionInstance(self.bot, proto)
+        m = MissionInstance(self.bot, proto, self.kite)
         m.state = MissionState.Doing
         m.iter = 0
         self.currentMissions += [m]
@@ -120,7 +120,7 @@ class MissionSystem:
         if self.GetPending(id):
             return
         proto = self.GetPrototype(id)
-        m = MissionInstance(self.bot, proto)
+        m = MissionInstance(self.bot, proto, self.kite)
         m.state = MissionState.Pending
         m.iter = 0
         self.pendingMissions.add(m)

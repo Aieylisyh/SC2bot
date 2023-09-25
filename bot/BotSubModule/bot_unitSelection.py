@@ -34,11 +34,13 @@ class bot_unitSelection:
         c = bot.calculate_cost(u.type_id)
         return c.minerals + c.vespene
 
-    def DamageDealBonusToAjustAttackPriority(self, u: Unit):
+    def AttackPiorityBonus(self, u: Unit):
         if u.is_hallucination:
-            return -60
-        if u.is_constructing_scv or u.is_carrying_resource:
+            return -90
+        if u.is_constructing_scv:
             return 7
+        if u.is_carrying_resource:
+            return 6
         if u.is_structure:
             return -5
         if u.type_id in {
@@ -83,14 +85,19 @@ class bot_unitSelection:
             # TODO
         }:
             return 1
+        if u.is_flying:
+            return 1
         return 0
 
     def GetUnitPowerValue(self, u: Unit):
         bot = self.bot
         if u.is_structure:
             if u.type_id in {
-                UnitTypeId.BUNKER,
                 UnitTypeId.MISSILETURRET,
+            }:
+                return 200
+            if u.type_id in {
+                UnitTypeId.BUNKER,
                 UnitTypeId.SPINECRAWLER,
                 UnitTypeId.SPORECANNON,
                 UnitTypeId.PHOTONCANNON,
@@ -99,7 +106,7 @@ class bot_unitSelection:
             if u.type_id in {
                 UnitTypeId.PLANETARYFORTRESS,
             }:
-                return 750
+                return 900
             return 0
 
         if u.type_id in {

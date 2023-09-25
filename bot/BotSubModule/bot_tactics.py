@@ -413,6 +413,8 @@ class bot_tactics:
             return (False, None, 0)
 
         for e in attackableEnes:
+            if not e:
+                continue
             dmg = u.calculate_damage_vs_target(e)
             # u.calculate_damage_vs_target
             # Returns a tuple of: [potential damage against target, attack speed, attack range] : Tuple[float, float, float]:
@@ -439,7 +441,7 @@ class bot_tactics:
             e.tpv = (
                 dmg
                 + oneShotBonus
-                + self.unitSelection.DamageDealBonusToAjustAttackPriority(e)
+                + self.unitSelection.AttackPiorityBonus(e)
                 - u.weapon_cooldown * dmg * 0.6
             )
 

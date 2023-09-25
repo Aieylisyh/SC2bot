@@ -17,7 +17,6 @@ from bot.BotSubModule.bot_nexusSkill import bot_nexusSkill
 from bot.BotSubModule.bot_tech import bot_tech
 from bot.BotSubModule.Mission.MissionSystem import MissionSystem
 from bot.BotSubModule.bot_unitSelection import bot_unitSelection
-from bot.BotSubModule.bot_kite import bot_kite
 
 # learn source：https://brax.gg/python-sc2-advanced-bot/
 
@@ -36,7 +35,6 @@ class StalkerRushBot(BotAI):
     trainArmy: bot_trainArmy
     nexusSkill: bot_nexusSkill
     unitSelection: bot_unitSelection
-    kite: bot_kite
 
     startingGame_rusherBuilt: int = 0
     midEarlyGame_oracleBuilt: int = 0
@@ -58,7 +56,6 @@ class StalkerRushBot(BotAI):
         self.trainArmy = bot_trainArmy(self)
         self.nexusSkill = bot_nexusSkill(self)
         self.unitSelection = bot_unitSelection(self)
-        self.kite = bot_kite(self)
         self.mission = MissionSystem(self)
 
         await self.client.debug_minerals()
