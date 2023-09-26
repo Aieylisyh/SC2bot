@@ -31,8 +31,8 @@ class bot_kite:
         self.unitSelection = self.bot.unitSelection
         self.tactics = t
 
-        self.timeStep = 0.3
-        self.timeStepIgnore = 0.1
+        self.timeStep = 0.5
+        self.timeStepIgnore = 0.2
 
     def GetTimeStep(self, totalTime: float):
         if totalTime <= 0:
@@ -131,13 +131,16 @@ class bot_kite:
 
     def GetDirByRadianDelta(self, u: Unit, radian: float) -> Point2:
         rad = u.facing + radian
-        dir = Point2(math.cos(rad), math.sin(rad))
-        print("GetPosByRadianDelta" + dir)
+        dir = Point2((math.cos(rad), math.sin(rad)))
         return dir
 
-    def GetTurnTime(self, u: Unit, deltaRadian):
-        u.rot
-        return 0
+    def GetPosByRadianDelta(self, u: Unit, time: float, radian: float) -> Point2:
+        t = self.tactics.GetTurnTime(radian)
+        goTime = time - t
+        if goTime <= 0:
+            return u.position
+        speed = u.real_speed
+        return self.GetDirByRadianDelta(u, radian) * speed * 1.4 * goTime + u.position
 
     async def Kite_offensive(self, u: Unit, futurePosition: Point2):
         await self.Kite(u, futurePosition, 0.25, 0.75, 0.75)
@@ -174,33 +177,47 @@ class bot_kite:
         bot = self.bot
         thinkRange = self.GetKiteThinkRange()
         timeStep = self.GetTimeStep(wcd)
-        return
         # iter1 origin, 0, 0.5pi, 1pi, 1.5pi, 2pi
         # iter2 0.25pi, 0.75pi, 1.25pi, 1.75pi,
         # iter3 1/8pi, 3/8pi, 5/8pi, 7/8pi, 9/8pi, 11/8pi, 13/8pi, 15/8pi
 
-        calculatedPoints: list[tuple[Point2, int]] = []  # pos, score
-        calculatedPoints += tuple(
+        calculatedPoints: list[tuple[float, Point2, int]] = []  # pos, score
+        calculatedPoints += (
+            -1,  # origin
             u.position,
             self.Calculate_Pos_Score(
                 u.position, futurePosition, factor_threat, factor_reward, factor_future
             ),
         )
 
-        pendingPoints: list[tuple[Point2, int]] = []
-        for p in pendingPoints:
-            p[1] = self.Calculate_Pos_Score(
-                p[0], futurePosition, factor_threat, factor_reward, factor_future
-            )
-            calculatedPoints += tuple(p[0], p[1])
+        # iter1
+        pendingPoints: list[tuple[float, Point2, int]] = []
+        print("iter1 ", timeStep)
+        print("pos ", u.position)
+        for i in range(4):  # 0123
+            rad = math.pi * i * 0.5
+            iPos = self.GetPosByRadianDelta(u, timeStep, rad)
 
-    def FilterGoodPoints(given: list[tuple[Point2, int]]) -> list[tuple[Point2, int]]:
-        res = list[tuple[Point2, int]] = []
+            iScore = self.Calculate_Pos_Score(
+                iPos, futurePosition, factor_threat, factor_reward, factor_future
+            )
+            p = (rad, iPos, iScore)
+            calculatedPoints += p  # same as append
+            print("rad ", round(rad, 2), " pos ", iPos, " score ", iScore)
+            pp = (rad, iPos, iScore)
+            pendingPoints.append(pp)  # same as +=
+
+        goodPendingPoints = bot_kite.FilterGoodPoints(pendingPoints)
+
+    def FilterGoodPoints(
+        given: list[tuple[float, Point2, int]]
+    ) -> list[tuple[float, Point2, int]]:
+        res: list[tuple[float, Point2, int]] = []
         average: float = 0.0
         for g in given:
-            average += g[1]
+            average += g[2]
         average = average / len(given)
         for g in given:
-            if g[1] >= average:
+            if g[2] >= average:
                 res += g
         return res

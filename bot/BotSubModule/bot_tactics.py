@@ -1,4 +1,4 @@
-import random
+import random, math
 from typing import Union
 from sc2.bot_ai import BotAI, Race
 from sc2.data import Race, Difficulty
@@ -353,6 +353,18 @@ class bot_tactics:
                 continue
             await self.MicroMoveUnit(u, home_location, enemies)
             continue
+
+    # roate
+    def GetTurnTime(self, deltaRadian) -> float:
+        while deltaRadian > math.pi * 2:
+            deltaRadian -= math.pi * 2
+        while deltaRadian < 0:
+            deltaRadian += math.pi * 2
+        if deltaRadian > math.pi:
+            deltaRadian = abs(math.pi * 2 - deltaRadian)
+        # QUEEN_TURN_RATE: float = 999.8437 * 1.4 * math.pi / 180
+        # about 0.35s a round,2pi=6.28 6.28/18
+        return deltaRadian * 0.056
 
     # attack only when this attack is very high cost efficiency
     # no wait, high damage bonus, one shot, etc
