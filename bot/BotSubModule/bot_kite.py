@@ -31,46 +31,56 @@ class bot_kite:
         self.unitSelection = self.bot.unitSelection
         self.tactics = t
 
-        self.timeStep = 0.5
-        self.timeStepIgnore = 0.2
+        self.timeStep = 0.4
+        self.timeStepIgnore = 0.15
 
     def GetTimeStep(self, totalTime: float):
         if totalTime <= 0:
-            return self.timeStepIgnore
+            return self.timeStep
         if totalTime < self.timeStep + self.timeStepIgnore:
             return totalTime
         return self.timeStep
 
     def Calculate_Pos_Score(
         self,
+        u: Unit,
         p: Point2,
         futurePosition: Point2,
         factor_threat: float = 1,
         factor_reward: float = 1,
         factor_future: float = 1,
     ) -> int:
-        score_threat = self.Calculate_Pos_Threat(p)
-        score_reward = self.Calculate_Pos_Reward(p)
-        score_future = self.Calculate_Pos_FutureBenefit(p, futurePosition)
+        score_threat = self.Calculate_Pos_Threat(u, p)
+        score_reward = self.Calculate_Pos_Reward(u, p)
+        score_future = self.Calculate_Pos_FutureBenefit(u, p, futurePosition)
         return (
             score_threat * factor_threat
             + score_reward * factor_reward
             + score_future * factor_future
         )
 
-    def Calculate_Pos_Threat(self, p: Point2) -> int:
+    def Calculate_Pos_Threat(self, u: Unit, p: Point2) -> int:
         v: int = 0
 
         return v
 
-    def Calculate_Pos_Reward(self, p: Point2) -> int:
+    def Calculate_Pos_Reward(self, u: Unit, p: Point2) -> int:
         v: int = 0
 
         return v
 
-    def Calculate_Pos_FutureBenefit(self, p: Point2, futurePosition: Point2) -> int:
+    def Calculate_Pos_FutureBenefit(
+        self, u: Unit, p: Point2, futurePosition: Point2
+    ) -> int:
         v: int = 0
-
+        bot = self.bot
+        # temp use raw dir compare, late must implement path finding
+        dir1 = p - u.position
+        dir2 = futurePosition - u.position
+        rad1 = math.atan2(dir1.y, dir1.x)
+        rad2 = math.atan2(dir2.y, dir2.x)
+        dr = self.tactics.GetDeltaRadian(rad1, rad2)
+        v = (1.6 - dr) * 10
         return v
 
     def Calculate_EneReward(e: Unit):
@@ -127,7 +137,7 @@ class bot_kite:
         # swarm the unit's group, the group should not distance for more than this distance
     ):
         bot = self.bot
-        self.Kite(u, futurePosition, aggressiveFactor, sneakyFactor)
+        await self.Kite(u, futurePosition, aggressiveFactor, sneakyFactor)
 
     def GetDirByRadianDelta(self, u: Unit, radian: float) -> Point2:
         rad = u.facing + radian
@@ -171,7 +181,7 @@ class bot_kite:
         if wcd == 0:
             info = self.tactics.GetGoodAttackInfo(u, 0)
             if info[0]:
-                await u.attack(info[1])
+                u.attack(info[1])
                 return
 
         bot = self.bot
@@ -186,7 +196,12 @@ class bot_kite:
             -1,  # origin
             u.position,
             self.Calculate_Pos_Score(
-                u.position, futurePosition, factor_threat, factor_reward, factor_future
+                u,
+                u.position,
+                futurePosition,
+                factor_threat,
+                factor_reward,
+                factor_future,
             ),
         )
 
@@ -199,7 +214,7 @@ class bot_kite:
             iPos = self.GetPosByRadianDelta(u, timeStep, rad)
 
             iScore = self.Calculate_Pos_Score(
-                iPos, futurePosition, factor_threat, factor_reward, factor_future
+                u, iPos, futurePosition, factor_threat, factor_reward, factor_future
             )
             p = (rad, iPos, iScore)
             calculatedPoints += p  # same as append
@@ -208,6 +223,14 @@ class bot_kite:
             pendingPoints.append(pp)  # same as +=
 
         goodPendingPoints = bot_kite.FilterGoodPoints(pendingPoints)
+        print(goodPendingPoints)
+        res = sorted(
+            goodPendingPoints,
+            key=lambda e: e[2],
+            reverse=True,
+        )[0]
+        print("kite res ", res)
+        u.move(res[1])
 
     def FilterGoodPoints(
         given: list[tuple[float, Point2, int]]
@@ -219,5 +242,5 @@ class bot_kite:
         average = average / len(given)
         for g in given:
             if g[2] >= average:
-                res += g
+                res += [g]
         return res

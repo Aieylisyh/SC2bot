@@ -354,17 +354,21 @@ class bot_tactics:
             await self.MicroMoveUnit(u, home_location, enemies)
             continue
 
-    # roate
-    def GetTurnTime(self, deltaRadian) -> float:
+    def GetDeltaRadian(self, rad1: float, rad2: float = 0) -> float:
+        deltaRadian = rad1 - rad2
         while deltaRadian > math.pi * 2:
             deltaRadian -= math.pi * 2
         while deltaRadian < 0:
             deltaRadian += math.pi * 2
         if deltaRadian > math.pi:
             deltaRadian = abs(math.pi * 2 - deltaRadian)
+        return deltaRadian
+
+    # roate
+    def GetTurnTime(self, deltaRadian) -> float:
         # QUEEN_TURN_RATE: float = 999.8437 * 1.4 * math.pi / 180
         # about 0.35s a round,2pi=6.28 6.28/18
-        return deltaRadian * 0.056
+        return self.GetDeltaRadian(deltaRadian) * 0.055
 
     # attack only when this attack is very high cost efficiency
     # no wait, high damage bonus, one shot, etc
