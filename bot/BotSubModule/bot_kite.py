@@ -75,6 +75,9 @@ class bot_kite:
         v: int = 0
         bot = self.bot
         # temp use raw dir compare, late must implement path finding
+        # position = self.pather.find_weak_influence_ground(target, 4)
+        # target = self.pather.find_influence_ground_path(worker.position, position)
+
         dir1 = p - u.position
         dir2 = futurePosition - u.position
         rad1 = math.atan2(dir1.y, dir1.x)

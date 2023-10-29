@@ -163,7 +163,7 @@ def run():
         # Local game
         print("Starting local game...")
         run_game(
-            sc2.maps.get("Simple96"),
+            sc2.maps.get("Simple64"),
             # Simple64 128 96
             # AncientCisternAIE
             # GoldenauraAIE
